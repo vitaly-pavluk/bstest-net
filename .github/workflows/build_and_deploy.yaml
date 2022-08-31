@@ -1,0 +1,48 @@
+# Description
+##############
+# Buid and deploy WebAPI as container image to ACR
+##############
+# Triggered manually 
+##############
+
+name: Build & Deploy Web Api
+on: 
+  
+  workflow_dispatch:
+    inputs: 
+      service_name:
+        description: 'Service to deploy'
+        required: true
+        type: choice
+        options:
+        - app01
+        - app02 
+  
+env: 
+  app01: './src/WebApp01/WebApp01.proj'
+  app02: './src/WebApp02/WebApp02.proj'
+  NUGET_ACCESS_TOKEN: 'iddqd 12345 idkfa'
+  
+jobs:
+  build_n_deploy:
+    name: Build and deploy
+    runs-on: ubuntu-latest   
+    steps:
+      - name: Setup
+        run: echo "SERVICE_PATH=${{env[github.event.inputs.service_name]}}" >> $GITHUB_ENV
+        # run: echo ${{env[github.event.inputs.service_name]}} 
+      - name: Log
+        run: echo $SERVICE_PATH
+
+      - name: Build 
+        uses: vitalii-pavliuk/backendservicetest/.github/workflows/build_app.yaml@main
+        with: 
+          service_path: ${{env.SERVICE_PATH}}
+        secrets: 
+          NUGET_ACCESS_TOKEN: ${{env.NUGET_ACCESS_TOKEN}}
+        
+          
+        
+        
+  
+  

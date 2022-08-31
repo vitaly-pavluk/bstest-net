@@ -1,0 +1,15 @@
+name: "Build application"
+on: 
+  workflow_call:
+   inputs:
+     service_path:
+       type: string
+       required: true
+
+jobs:
+  build_app:
+    runs-on: ubuntu-latest
+    steps:
+     - name: "Build and store artifacts"
+       run: echo " run build on the project ${{github.event.inputs.service_path}} with secret ${{secrets.NUGET_ACCESS_TOKEN}}"
+    
