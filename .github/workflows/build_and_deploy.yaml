@@ -32,16 +32,18 @@ jobs:
         run: echo "SERVICE_PATH=${{env[github.event.inputs.service_name]}}" >> $GITHUB_ENV
         # run: echo ${{env[github.event.inputs.service_name]}} 
       - name: Log
-        run: echo $SERVICE_PATH
+        run: | 
+          echo $SERVICE_PATH
+          echo ${{env.SERVICE_PATH}}
 
-  build_n_deploy:
-    needs: init_workflow
-    name: Build and deploy
-    uses: vitaly-pavluk/bstest-net/.github/workflows/build_app.yaml@main
-    with: 
-      service_path: ${{env.SERVICE_PATH}}
-    secrets: 
-      NUGET_ACCESS_TOKEN: ${{secrets.NUGET_TOKEN}}
+#  build_n_deploy:
+#    needs: init_workflow
+#    name: Build and deploy
+#    uses: vitaly-pavluk/bstest-net/.github/workflows/build_app.yaml@main
+#    with: 
+#      service_path: ${{env.SERVICE_PATH}}
+#    secrets: 
+#      NUGET_ACCESS_TOKEN: ${{secrets.NUGET_TOKEN}}
         
           
         
