@@ -21,29 +21,33 @@ on:
 env: 
   app01: './src/WebApp01/WebApp01.proj'
   app02: './src/WebApp02/WebApp02.proj'
-  NUGET_ACCESS_TOKEN: 'iddqd 12345 idkfa'
   
 jobs:
   init_workflow:
-    name: Init WF
+    name: Init Workflow
     runs-on: ubuntu-latest   
     outputs:
       service_path: ${{steps.setup}}
     steps:
-      - name: Setup
-        run: |
-          echo "SERVICE_PATH=${{env[github.event.inputs.service_name]}}" >> $GITHUB_ENV
-          echo "::set-output name=service_path::$SERVICE_PATH"
+      - name: Get path to the app
+        run: echo "::set-output name=service_path::${{env[github.event.inputs.service_name]}}"
       
 
-  build_n_deploy:
+  build_app:
     needs: init_workflow
     name: Build and deploy
-    uses: vitaly-pavluk/bstest-net/.github/workflows/build_app.yaml@main
+    uses: .github/workflows/test_build_app.yaml@main
     with: 
       service_path: ${{needs.init_workflow.outputs.service_path}}
     secrets: 
       NUGET_ACCESS_TOKEN: ${{secrets.NUGET_TOKEN}}
+
+  deploy_app:
+    needs: build_app
+    name: Deploy to Azure Container Registry
+    uses: .github/workflows/deploy_app.yaml@main 
+    with: 
+     artifacts_key:
         
           
         

@@ -9,9 +9,15 @@ on:
       NUGET_ACCESS_TOKEN:
         description: 'NuGet access token'
         required: true
+    outputs:
+      artifacts_token:
+        description: "Artifacts upload access token"
+        value: ${{ jobs.build_app.outputs.output1 }}
 
 jobs:
   build_app:
+    outputs:
+      artifacts_token: ${{steps.upload_artifacts.key}}
     runs-on: ubuntu-latest
     steps:
      - name: "Build and store artifacts"
