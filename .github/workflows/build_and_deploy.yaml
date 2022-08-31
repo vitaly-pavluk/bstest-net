@@ -35,6 +35,7 @@ jobs:
         run: echo $SERVICE_PATH
 
   build_n_deploy:
+    needs: init_workflow
     name: Build and deploy
     uses: vitaly-pavluk/bstest-net/.github/workflows/build_app.yaml@main
     with: 
