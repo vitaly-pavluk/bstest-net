@@ -1,4 +1,4 @@
-name: "Build application"
+name: "Build application workflow"
 on: 
   workflow_call:
    inputs:

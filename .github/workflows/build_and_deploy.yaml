@@ -24,8 +24,8 @@ env:
   NUGET_ACCESS_TOKEN: 'iddqd 12345 idkfa'
   
 jobs:
-  build_n_deploy:
-    name: Build and deploy
+  init_workflow:
+    name: Init WF
     runs-on: ubuntu-latest   
     steps:
       - name: Setup
@@ -34,6 +34,11 @@ jobs:
       - name: Log
         run: echo $SERVICE_PATH
 
+  build_n_deploy:
+    name: Build and deploy
+    runs-on: ubuntu-latest   
+    steps:
+    
       - name: Build 
         uses: vitalii-pavliuk/backendservicetest/.github/workflows/build_app.yaml@main
         with: 
