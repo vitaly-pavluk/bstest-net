@@ -7,8 +7,8 @@ on:
        required: true
     secrets: 
       NUGET_ACCESS_TOKEN:
-      description: 'NuGet access token'
-      required: true
+        description: 'NuGet access token'
+        required: true
 
 jobs:
   build_app:
