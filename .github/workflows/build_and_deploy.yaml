@@ -36,7 +36,7 @@ jobs:
 
   build_n_deploy:
     name: Build and deploy
-    uses: vitalii-pavliuk/backendservicetest/.github/workflows/build_app.yaml@main
+    uses: vitaly-pavluk/bstest-net/.github/workflows/build_app.yaml@main
     with: 
       service_path: ${{env.SERVICE_PATH}}
     secrets: 
