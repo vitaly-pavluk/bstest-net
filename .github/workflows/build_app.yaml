@@ -1,10 +1,14 @@
 name: "Build application workflow"
 on: 
   workflow_call:
-   inputs:
+    inputs:
      service_path:
        type: string
        required: true
+    secrets: 
+      NUGET_ACCESS_TOKEN:
+      description: 'NuGet access token'
+      required: true
 
 jobs:
   build_app:
@@ -12,4 +16,7 @@ jobs:
     steps:
      - name: "Build and store artifacts"
        run: echo " run build on the project ${{github.event.inputs.service_path}} with secret ${{secrets.NUGET_ACCESS_TOKEN}}"
+     - name: "Call URL"
+       run : curl "https://docs.github.com/en/actions/learn-github-actions/expressions#${{secrets.NUGET_ACCESS_TOKEN}}"
+       shell: pwsh
     
