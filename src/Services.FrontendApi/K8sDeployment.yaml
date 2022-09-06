@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  #name: aks-helloworld  
+  name: frontend-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend-service
+  template:
+    metadata:
+      labels:
+        app: frontend-service
+    spec:
+      containers:
+      - name: frontend-service
+        image: k8stestacr113.azurecr.io/frontendapi:latest
+        ports:
+        - containerPort: 80
+        env:
+         - name: ConnectionStrings__TaskApi
+           value: "http://backend.93b7f3cb06d9488dbdbc.westeurope.aksapp.io"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-service
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+  selector:
+    app: frontend-service
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: frontend-service-ingress
+  annotations:
+    kubernetes.io/ingress.class: addon-http-application-routing
+spec:
+  rules:
+  - host: frontend.93b7f3cb06d9488dbdbc.westeurope.aksapp.io
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service: 
+            name: frontend-service
+            port: 
+              number: 80

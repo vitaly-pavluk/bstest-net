@@ -1,4 +1,4 @@
-name: "-= Build application workflow =-"
+name: "(reusable) - build web app workflow"
 on: 
   workflow_call:
     inputs:
@@ -20,6 +20,7 @@ jobs:
       artifacts_token: ${{steps.upload_artifacts.key}}
     runs-on: ubuntu-latest
     steps:
+     - name: "Install .NET"
      - name: "Build and store artifacts"
        run: echo " run build on the project ${{github.event.inputs.service_path}} with secret ${{secrets.NUGET_ACCESS_TOKEN}}"
      - name: "Call URL"

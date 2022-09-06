@@ -1,7 +1,8 @@
 using System.ComponentModel.DataAnnotations;
+using LoggerApp.Models;
 using Microsoft.AspNetCore.Mvc;
 
-namespace WebApplication1.Controllers
+namespace LoggerApp.Controllers
 {
     [ApiController]
     [Route("[controller]")]
@@ -21,7 +22,7 @@ namespace WebApplication1.Controllers
         {
             return Log.Select(le=>new LogEntry
             {
-                Log= le,Hash=le.ToMd5HashString()
+                Log= le
 
             }).ToArray();
         }
@@ -31,11 +32,5 @@ namespace WebApplication1.Controllers
         {
             Log.Add(logEntry);
         }
-    }
-
-    public class LogEntry
-    {
-        public string Log { get; set; }
-        public string Hash { get; set; }
     }
 }

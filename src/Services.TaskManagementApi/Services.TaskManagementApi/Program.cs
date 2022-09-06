@@ -7,30 +7,19 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-//
-builder.Services.AddHttpClient("DefaultHttpClient")
-    .AddHeaderPropagation();
-
-builder.Services.AddHeaderPropagation(options =>
-{
-    options.Headers.Add("kubernetes-route-as");
-});
-
 var app = builder.Build();
 
-app.UseDeveloperExceptionPage();
-app.UseSwagger();
-app.UseSwaggerUI();
-
+// Configure the HTTP request pipeline.
+//if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
 
 app.UseHttpsRedirection();
 
 app.UseAuthorization();
 
-//app.UseEndpoints((r) =>
-//{
-//    r.MapControllers();
-//});
-
 app.MapControllers();
+
 app.Run();

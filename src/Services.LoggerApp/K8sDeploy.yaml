@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  #name: aks-helloworld  
+  name: logger-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: logger-service
+  template:
+    metadata:
+      labels:
+        app: logger-service
+    spec:
+      containers:
+      - name: logger-service
+        image: k8stestacr113.azurecr.io/loggerapp:latest
+        ports:
+        - containerPort: 80
+        env:
+         - name: TITLE
+           value: "Welcome to Azure Kubernetes Service (AKS)"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: logger-service 
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+  selector:
+    app: logger-service
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: logger-service-ingress
+  annotations:
+    kubernetes.io/ingress.class: addon-http-application-routing
+spec:
+  rules:
+  - host: logger-app.93b7f3cb06d9488dbdbc.westeurope.aksapp.io
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service: 
+            name: logger-service
+            port: 
+              number: 80

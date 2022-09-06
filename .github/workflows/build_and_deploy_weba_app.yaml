@@ -1,0 +1,56 @@
+# Description
+##############
+# Buid and deploy WebAPI as container image to ACR
+##############
+# Triggered manually 
+##############
+
+name: Build & Deploy Web Api
+on: 
+
+  workflow_dispatch:
+    inputs: 
+      service_name:
+        description: 'Service to deploy'
+        required: true
+        type: choice
+        options:
+        - task_app
+        - logger_app
+  
+env: 
+  task_app: '.src/Services.LoggerApp/LoggerApp/LoggerApp.csproj'
+  logger_app: './src/WebApp02/WebApp02.proj'
+  
+jobs:
+  init_workflow:
+    name: Init Workflow
+    runs-on: ubuntu-latest   
+    outputs:
+      service_path: ${{steps.setup}}
+    steps:
+      - name: Get path to the app
+        run: echo "::set-output name=service_path::${{env[github.event.inputs.service_name]}}"
+      
+
+  build_app:
+    needs: init_workflow
+    name: Build and deploy
+    uses: .github/workflows/test_build_app.yaml@main
+    with: 
+      service_path: ${{needs.init_workflow.outputs.service_path}}
+    secrets: 
+      NUGET_ACCESS_TOKEN: ${{secrets.NUGET_TOKEN}}
+
+  deploy_app:
+    needs: build_app
+    name: Deploy to Azure Container Registry
+    uses: .github/workflows/deploy_app.yaml@main 
+    with: 
+     artifacts_key:
+        
+          
+        
+        
+  
+  
