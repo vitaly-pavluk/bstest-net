@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Services.StorageApi.Controllers
@@ -19,12 +20,16 @@ namespace Services.StorageApi.Controllers
         [HttpGet("all",Name = "GetAll")]
         public IEnumerable<WorkTask> Get()
         {
+            DumpRequest();
+
             return _workTasksStorage;
         }
 
         [HttpPost("add")]
         public void CreateTask([FromBody]string? summary)
         {
+            DumpRequest();
+            
             _workTasksStorage.Add(new WorkTask
             {
                 WorkTaskId = DateTime.UtcNow.ToString("O"),
@@ -36,6 +41,17 @@ namespace Services.StorageApi.Controllers
                                   ?"#no k8s header in request#":k8srouteHeader
                           )
             });
+        }
+
+        private void DumpRequest()
+        {
+            _logger.LogInformation
+            (
+                "Request {url} \n\r Headers: {headers}",
+                Request.GetDisplayUrl(),
+                string.Join(";;", Request.Headers.Select(h=>$"{h.Key}:{h.Value}"))
+            );
+
         }
     }
 }
