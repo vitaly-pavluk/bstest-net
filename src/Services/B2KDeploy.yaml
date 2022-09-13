@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-pr123
+  namespace:  b2kapp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend-pr123
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  minReadySeconds: 5 
+  template:
+    metadata:
+      annotations:
+        routing.visualstudio.io/route-on-header: kubernetes-route-as=pr123
+      labels:
+        app: frontend-pr123
+        routing.visualstudio.io/route-from: frontend
+    spec:
+      nodeSelector:
+        "kubernetes.io/os": linux
+      containers:
+      - name: frontend
+        image: k8stestacr113.azurecr.io/frontendapi:latest
+        ports:
+        - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-pr123
+  namespace: b2kapp
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+  selector:
+    app: frontend-pr123

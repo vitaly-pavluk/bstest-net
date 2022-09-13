@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: storageapi
+  namespace: b2kapp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: storageapi
+  template:
+    metadata:
+      labels:
+        app: storageapi
+    spec:
+      containers:
+      - name: storageapi
+        image: xtestacr113.azurecr.io/storageapi:latest
+        ports:
+        - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: storageapi
+  namespace: b2kapp
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+  selector:
+    app: storageapi
