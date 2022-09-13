@@ -1,0 +1,25 @@
+name: CI
+on:
+  push:
+    branches: [ main ]
+jobs:
+  build:
+    env:
+        # Here, we're choosing to place it in the workspace folder
+        # in a folder called `.kube` to keep things organized.
+        # Note: You could just do KUBECONFIG if you're planning to use
+        # this for all other `kubectl` actions in this workflow
+        POD_KUBECONFIG: '${{ github.workspace }}/.kube/pod-kubeconfig'
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    # Here, we're creating the parent directory and writing out our decoded
+    # kubeconfig to the location we stated above.
+    - run: |
+        mkdir -p '${{ github.workspace }}/.kube' \
+          && echo '${{ secrets.KubeConfig}}' | base64 -d > $POD_KUBECONFIG
+
+    # Finally, let's try using it. If you used `KUBECONFIG`, can can remove
+    # the `--kubeconfig $POD_KUBECONFIG` as kubectl will automatically use it.
+    - run: 'kubectl version --kubeconfig $POD_KUBECONFIG'
