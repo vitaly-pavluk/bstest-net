@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-altered
+  namespace:  b2kapp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend-altered
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  minReadySeconds: 5 
+  template:
+    metadata:
+      annotations:
+        routing.visualstudio.io/route-on-header: kubernetes-route-as=backendaltered
+      labels:
+        app: backend-altered
+        routing.visualstudio.io/route-from: backendapi
+    spec:
+      containers:
+      - name: api
+        image: xtestacr113.azurecr.io/backendapi:altered
+        ports:
+         - containerPort: 80
+        env: 
+         - name: CONNECTIONSTRINGS__STORAGETASKAPI
+           value: "http://storageapi.b2kapp.svc.cluster.local"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-altered
+  namespace: b2kapp
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+  selector:
+    app: backend-altered
