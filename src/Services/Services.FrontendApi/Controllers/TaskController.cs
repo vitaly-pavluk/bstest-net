@@ -29,8 +29,8 @@ namespace Services.FrontendApi.Controllers
                 return Enumerable.Range(0, 10)
                     .Select(i => new WorkTask
                     {
-                        CreatedAt = DateTime.UtcNow,
-                        Summary = "Lorem ipsum" + i.ToString().PadLeft(5, '0')
+                        WorkTaskId = $"{i:D}",
+                        Summary = "Lorem ipsum " + i.ToString().PadLeft(5, '0')
                     }).ToArray();
             }
         }
