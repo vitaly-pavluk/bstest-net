@@ -16,11 +16,15 @@ spec:
       containers:
       - name: backendapi
         image: xtestacr113.azurecr.io/backendapi:latest
+        imagePullPolicy: Always
         ports:
-        - containerPort: 80
+        - name: http
+          containerPort: 80
+          protocol: TCP
         env: 
          - name: CONNECTIONSTRINGS__STORAGETASKAPI
-           value: "http://storageapi.b2kapp.svc.cluster.local"
+           # value: "http://storageapi.b2kapp.svc.cluster.local"
+           value: "http://storageapi"
 ---
 apiVersion: v1
 kind: Service
@@ -31,5 +35,8 @@ spec:
   type: ClusterIP
   ports:
   - port: 80
+    targetPort: 80
+    protocol: TCP
+    name: http
   selector:
     app: backendapi

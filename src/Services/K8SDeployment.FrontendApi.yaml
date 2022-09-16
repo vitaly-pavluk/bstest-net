@@ -16,11 +16,14 @@ spec:
       containers:
       - name: frontendapi
         image: xtestacr113.azurecr.io/frontendapi:latest
+        imagePullPolicy: Always
         ports:
-        - containerPort: 80
+        - name: http
+          containerPort: 80
+          protocol: TCP
         env: 
          - name: CONNECTIONSTRINGS__BACKENDTASKAPI
-           value: "http://backendapi.b2kapp.svc.cluster.local"
+           value: "http://backendapi"
 ---
 apiVersion: v1
 kind: Service
@@ -31,6 +34,9 @@ spec:
   type: ClusterIP
   ports:
   - port: 80
+    targetPort: 80
+    protocol: TCP
+    name: http
   selector:
     app: frontendapi
     
@@ -42,19 +48,21 @@ metadata:
   namespace: b2kapp
   annotations:
     nginx.ingress.kubernetes.io/ssl-redirect: "false"
-    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/use-regex: "false"
     # nginx.ingress.kubernetes.io/rewrite-target: /$2
-    nginx.ingress.kubernetes.io/rewrite-target: /$1
+    #nginx.ingress.kubernetes.io/rewrite-target: /$1
 spec:
   ingressClassName: nginx
   rules:
-    - http:
-          paths:
-           # - path: /frontend(/|$)(.*)
-           - path: /(.*)
-             pathType: Prefix
-             backend:
-              service: 
-                name: frontendapi
-                port: 
-                  number: 80
+  #- host: k8stestcluster.westeurope.cloudapp.azure.com
+  - host: frontend.7abbb0589a004c68b42a.westeurope.aksapp.io
+    http:
+      paths:
+        # - path: /frontend(/|$)(.*)
+        - path: /
+          pathType: Prefix
+          backend:
+           service: 
+            name: frontendapi
+            port: 
+              name: http
