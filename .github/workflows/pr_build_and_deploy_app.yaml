@@ -1,0 +1,139 @@
+# Description
+##############
+# Buid and deploy WebAPI as container image to ACR
+##############
+# Triggeredautomatically on pull request 
+##############
+# input parameters
+# SECRETS: 
+#    AZURE_NUGET_TOKEN - token to be 
+#    ACR_URL - azure container registry login server in format "contoso.azurecr.io"  without schema name 
+#    ACR_USERNAME - azure cotainer registry username
+#    ACR_PASSWORD - azure container registry password
+#    
+#    AZURE_CREDENTIALS - azure credentials
+#    CLUSTER_NAME  - name of AKS cluster
+#    RESOURCE_GROUP - azure resource groups 
+
+name: Build & Deploy Web Api
+on: 
+ pull_request:
+   branches:
+    - main  # branch that pr targets 
+   paths:
+    - '/src/Services/Services.BackendApi/**' # restrict changes to only specific path to avoid deploying any other service
+
+env:
+  DOCKER_IMAGE_NAME: backendapi
+  CLUSTER_NAMESPACE: b2kapp
+  SERVICE_NAME: backendapi
+
+
+
+# cancel alterady running instances of this workflow for PR
+# when new instance was initiated by the changes in the PR (new commits, etc.)
+concurrency:
+  group: kubernetes-ci-${{ github.ref }}-1
+  cancel-in-progress: true
+
+jobs:
+    
+  get_sources:
+    runs-on: ubuntu-latest
+    needs: init
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v3
+        with:
+         fetch-dept: 0
+
+      - name: Replace NuGet Token
+        run: | 
+          (Get-Content './src/Services/Services.BackendApi/nuget.config -Raw) -Replace 'AZURE_NUGET_TOKEN','${{secrets.AZURE_NUGET_TOKEN}}' | `
+          SetContent './src/Services/Services.BackendApi/nuget.config
+        shell: pwsh  
+
+      - name: ACR Login 
+      - uses: azure/docker-login@v1
+        with:
+          login-server: ${{ secrets.ACR_URL }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+
+      - name: Build and publish docker image
+        id: build_docker_image
+        run: |
+             <#
+             create docker image and push it to ACR 
+             image tag has format <ACR_URL>/<ImageName>:<ImageTag> e.g. myImages.azureacr.io/backendapi:12345
+             script below creates image and tags it with first 7 digits of github PR SHA (The commit SHA that triggered the workflow. ) 
+             #> 
+
+             $imageUrl="${{secrets.ACR_URL}}/$($Env:DOCKER_IMAGE_NAME)" 
+             $imageTag=$($Env:GITHUB_SHA.SubString(0,7))
+
+             echo "Image tag: $imageTag"
+
+             docker build -f './src/Services/Services.BackendApi/Dockerfile' --force-rm -t "$($imageUrl):$($imageTag)" "$($Env:GITHUB_WORKSPACE)/src/Services"
+             docker push $imageTag
+
+             echo "::set-output name=image_url::$imageUrl" # expose full url on acr and docker image  
+             echo "::set-output name=image_tag::$imageTag" # expose docker image tag             
+        shell: pwsh
+
+      - name: Create rlease name
+        id: release-name
+        run: |
+              <#
+                generate release name as <servicename>-<First7SymbolsOfLastCommitSHA>    
+              #>
+              $releaseName = "${{env.SERVICE_NAME}}-$($Env:GITHUB_SHA.SubString(0,7))"
+              echo "::set-output name=result::$releaseName"
+        shell: pwsh
+
+      - name: Prepare HEML chart
+        uses: azure/k8s-bake@v1
+        id: bake_helm
+        with:
+            renderEngine: 'helm'            
+            helmChart: './src/Services/Services.BackendApi/charts/backendapi/'
+            releaseName: ${{steps.release.output.name}} # e.g. backendapi-b123asd  <servicename>-SHA
+            overrides: |
+              image.repository:${{ steps.build_docker_image.output.image_url }}
+              image.tag:${{ steps.build_docker_image.output.image_tag }}
+              fullnameOverride: ${{steps.release-name.outputs.result}}
+
+      - name: Set Azure Context  
+        uses: azure/aks-set-context@v1
+        with:
+          creds: '${{ secrets.AZURE_CREDENTIALS }}'
+          cluster-name: ${{ secrets.CLUSTER_NAME }}
+          resource-group: ${{ secrets.RESOURCE_GROUP }}      
+
+      
+      # Deploy app to AKS
+      - name: Deploy to AKS
+        uses: azure/k8s-deploy@v1
+        with:
+          manifests: ${{ steps.bake_helm.outputs.manifestsBundle }}
+          namespace: ${{ env.CLUSTER_NAMESPACE }}
+          force: "true"
+          #imagepullsecrets:  ${{ secrets.IMAGE_PULL_SECRET }}
+
+        # annotate pods that have been deployed to the AKS with the labels 
+      - name: Add routing labels
+        run: |
+          kubectl label pods `
+               --selector="app=${{env.SERVICE_NAME}},release=${{steps.release-name.outputs.result}}" routing.visualstudio.io/route-from=${{env.SERVICE_NAME}}  `
+               --namespace ${{ env.CLUSTER_NAMESPACE  }}  `
+               --overwrite=true  
+
+          kubectl annotate pods  `
+          --selector="app=${{env.SERVICE_NAME}},release=${{steps.release-name.outputs.result}}" routing.visualstudio.io/route-on-header=kubernetes-route-as=${{steps.generate-valid-branch-name.outputs.result}}  ` 
+          --namespace ${{ env.CLUSTER_NAMESPACE }}  `
+           --overwrite=true
+          
+          
+        
+  
+  

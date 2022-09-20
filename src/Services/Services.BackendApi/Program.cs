@@ -33,5 +33,10 @@ app.UseSwaggerUI();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapGet("/", async context =>
+{
+    context.Response.StatusCode = StatusCodes.Status200OK;
+    await context.Response.WriteAsync("healthy");
+});
 
 app.Run();
