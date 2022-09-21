@@ -124,20 +124,21 @@ jobs:
             releaseName: ${{steps.release-name.output.result}} # e.g. backendapi-b123asd  <servicename>-SHA
             silent: false # set to true for suppress action log output
             overrides: |
-              image.repository:${{ steps.build_docker_image.output.image_url }}
-              image.tag:${{ steps.build_docker_image.output.image_tag }}
+              image.repository: ${{ steps.build_docker_image.output.image_url }}
+              image.tag: ${{ steps.build_docker_image.output.image_tag }}
               fullnameOverride: ${{steps.release-name.outputs.result}}
+              image.pullPolicy: "Always"
 
    
 
       
       # Deploy app to AKS
       - name: Deploy to AKS
-        uses: azure/k8s-deploy@v1
+        uses: azure/k8s-deploy@v3.1
         with:
           manifests: ${{ steps.bake_helm.outputs.manifestsBundle }}
           namespace: ${{ env.CLUSTER_NAMESPACE }}
-          force: "true"
+          #force: "true"
 
         # annotate pods deployed in "Deploy to AKS" 
         # with the Bridge to Kubernetes  
