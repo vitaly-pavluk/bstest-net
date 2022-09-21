@@ -58,7 +58,7 @@ jobs:
 
       # set Kubectl context  see more https://github.com/Azure/aks-set-context#example
       - name: Set Azure Context  
-        uses: azure/aks-set-context@v1
+        uses: azure/aks-set-context@v3
         with:          
           cluster-name: ${{ secrets.CLUSTER_NAME }}
           resource-group: ${{ secrets.RESOURCE_GROUP }}      
