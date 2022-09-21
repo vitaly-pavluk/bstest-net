@@ -1,17 +1,16 @@
 # Description
 ##############
-# Buid and deploy WebAPI as container image to ACR
-##############
-# Triggeredautomatically on pull request 
+# Buid and deploy WebAPI as single pod service to AKS
+# Triggerred automatically by pull request that targets main bra
 ##############
 # input parameters
 # SECRETS: 
-#    AZURE_NUGET_TOKEN - token to be 
+#    AZURE_NUGET_TOKEN - token to be used during the app building and releasing to connect to the ADO Artifacts NuGet storage 
 #    ACR_URL - azure container registry login server in format "contoso.azurecr.io"  without schema name 
 #    ACR_USERNAME - azure cotainer registry username
 #    ACR_PASSWORD - azure container registry password
 #    
-#    AZURE_CREDENTIALS - azure credentials
+#    AZURE_CREDENTIALS - azure credentials in format ""
 #    CLUSTER_NAME  - name of AKS cluster
 #    RESOURCE_GROUP - azure resource groups 
 
@@ -25,15 +24,15 @@ on:
 
 env:
   DOCKER_IMAGE_NAME: backendapi
-  CLUSTER_NAMESPACE: b2kapp
+  CLUSTER_NAMESPACE: b2kapp # K8s namespace to be used in deployment
   SERVICE_NAME: backendapi
 
 
 
-# cancel alterady running instances of this workflow for PR
-# when new instance was initiated by the changes in the PR (new commits, etc.)
-concurrency:
-  group: kubernetes-ci-${{ github.ref }}-1
+# cancel all other instances of the current worflow that are running 
+# for the same branch e.g.  
+concurrency: 
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -47,26 +46,46 @@ jobs:
         with:
          fetch-dept: 0
 
+        # login to Azure with in advance created creds
+        # see how to create app, service principal and assign service principal on azure subscription with Contributor role
+        # https://learn.microsoft.com/en-us/azure/developer/github/connect-from-azure?tabs=azure-cli%2Cwindows#create-an-azure-active-directory-application-and-service-principal
+      - name: Azure Login 
+        uses: azure/login@v1
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      # set Kubectl context  see more https://github.com/Azure/aks-set-context#example
+      - name: Set Azure Context  
+        uses: azure/aks-set-context@v1
+        with:          
+          cluster-name: ${{ secrets.CLUSTER_NAME }}
+          resource-group: ${{ secrets.RESOURCE_GROUP }}      
+
+        # since Projects requre access to  NelNet ADO NuGet Artifacts feed
+        # nuget.config file should be modified and nuget access token replaced with valid one taken from secrets
       - name: Replace NuGet Token
         run: | 
           (Get-Content './src/Services/Services.BackendApi/nuget.config -Raw) -Replace 'AZURE_NUGET_TOKEN','${{secrets.AZURE_NUGET_TOKEN}}' | `
           SetContent './src/Services/Services.BackendApi/nuget.config
         shell: pwsh  
 
-      - name: ACR Login 
-      - uses: azure/docker-login@v1
+      - name: Build docker image and push it to Azure container registry 
+        id: build_docker_image
+        uses: azure/docker-login@v1
         with:
           login-server: ${{ secrets.ACR_URL }}
           username: ${{ secrets.ACR_USERNAME }}
-          password: ${{ secrets.ACR_PASSWORD }}
-
-      - name: Build and publish docker image
-        id: build_docker_image
+          password: ${{ secrets.ACR_PASSWORD }}         
         run: |
              <#
              create docker image and push it to ACR 
              image tag has format <ACR_URL>/<ImageName>:<ImageTag> e.g. myImages.azureacr.io/backendapi:12345
              script below creates image and tags it with first 7 digits of github PR SHA (The commit SHA that triggered the workflow. ) 
+             if instead of github commit SHA the branch name should be used to tag docker image it is possible but all special characters should be 
+             replaced with empty string e.g.   
+              "${{github.ref}}" -replace "[^a-zA-Z0-9 -]", "" 
              #> 
 
              $imageUrl="${{secrets.ACR_URL}}/$($Env:DOCKER_IMAGE_NAME)" 
@@ -88,6 +107,8 @@ jobs:
                 generate release name as <servicename>-<First7SymbolsOfLastCommitSHA>    
               #>
               $releaseName = "${{env.SERVICE_NAME}}-$($Env:GITHUB_SHA.SubString(0,7))"
+              echo "Release name:  $releaseName"
+
               echo "::set-output name=result::$releaseName"
         shell: pwsh
 
@@ -97,18 +118,14 @@ jobs:
         with:
             renderEngine: 'helm'            
             helmChart: './src/Services/Services.BackendApi/charts/backendapi/'
-            releaseName: ${{steps.release.output.name}} # e.g. backendapi-b123asd  <servicename>-SHA
+            releaseName: ${{steps.release-name.output.result}} # e.g. backendapi-b123asd  <servicename>-SHA
+            silent: false # set to true for suppress action log output
             overrides: |
               image.repository:${{ steps.build_docker_image.output.image_url }}
               image.tag:${{ steps.build_docker_image.output.image_tag }}
               fullnameOverride: ${{steps.release-name.outputs.result}}
 
-      - name: Set Azure Context  
-        uses: azure/aks-set-context@v1
-        with:
-          creds: '${{ secrets.AZURE_CREDENTIALS }}'
-          cluster-name: ${{ secrets.CLUSTER_NAME }}
-          resource-group: ${{ secrets.RESOURCE_GROUP }}      
+   
 
       
       # Deploy app to AKS
@@ -118,20 +135,45 @@ jobs:
           manifests: ${{ steps.bake_helm.outputs.manifestsBundle }}
           namespace: ${{ env.CLUSTER_NAMESPACE }}
           force: "true"
-          #imagepullsecrets:  ${{ secrets.IMAGE_PULL_SECRET }}
 
-        # annotate pods that have been deployed to the AKS with the labels 
+        # annotate pods deployed in "Deploy to AKS" 
+        # with the Bridge to Kubernetes  
       - name: Add routing labels
         run: |
-          kubectl label pods `
-               --selector="app=${{env.SERVICE_NAME}},release=${{steps.release-name.outputs.result}}" routing.visualstudio.io/route-from=${{env.SERVICE_NAME}}  `
-               --namespace ${{ env.CLUSTER_NAMESPACE  }}  `
-               --overwrite=true  
+              <#
+              kubectl label pods `
+                  --selector="app.kubernetes.io/name=${{steps.release-name.outputs.result}}" routing.visualstudio.io/route-from=${{env.SERVICE_NAME}}  `
+                  --namespace ${{ env.CLUSTER_NAMESPACE  }}  `
+                  --overwrite=true  
 
-          kubectl annotate pods  `
-          --selector="app=${{env.SERVICE_NAME}},release=${{steps.release-name.outputs.result}}" routing.visualstudio.io/route-on-header=kubernetes-route-as=${{steps.generate-valid-branch-name.outputs.result}}  ` 
-          --namespace ${{ env.CLUSTER_NAMESPACE }}  `
-           --overwrite=true
+              kubectl annotate pods  `
+              --selector="app.kubernetes.io/name=${{steps.release-name.outputs.result}}" routing.visualstudio.io/route-on-header=kubernetes-route-as=${{steps.generate-valid-branch-name.outputs.result}}  ` 
+              --namespace ${{ env.CLUSTER_NAMESPACE }}  `
+              --overwrite=true
+               #>
+
+              echo "Show pods that will be annotated with B2K labels"
+
+              kubectl get pods  `
+                   --selector="app.kubernetes.io/instance=${{steps.release-name.outputs.result}}"  `
+                   --namespace ${{ env.CLUSTER_NAMESPACE  }}  
+
+              echo "Annotating pods "
+              
+              # Apply label to the new pod deployed by HELM chart and marked as app.kubernetes.io/instance=<service-githubSHA>
+              # label will tell B2K to route requests from the original service 
+
+              kubectl label pods `
+                  --selector="app.kubernetes.io/instance=${{steps.release-name.outputs.result}}" routing.visualstudio.io/route-from=${{env.SERVICE_NAME}}  `
+                  --namespace ${{ env.CLUSTER_NAMESPACE  }}  `
+                  --overwrite=true  
+
+              #Annotate POD with HTTP routing header to route requests to this POD when header has specific value 
+              kubectl annotate pods  `
+              --selector="app.kubernetes.io/instance=${{steps.release-name.outputs.result}}" routing.visualstudio.io/route-on-header=kubernetes-route-as=${{steps.generate-valid-branch-name.outputs.result}} ` 
+              --namespace ${{ env.CLUSTER_NAMESPACE }}  `
+              --overwrite=true
+        shell: pwsh
           
           
         
