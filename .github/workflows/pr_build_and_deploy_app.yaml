@@ -67,8 +67,8 @@ jobs:
         # nuget.config file should be modified and nuget access token replaced with valid one taken from secrets
       - name: Replace NuGet Token
         run: | 
-          (Get-Content './src/Services/Services.BackendApi/nuget.config -Raw) -Replace 'AZURE_NUGET_TOKEN','${{secrets.AZURE_NUGET_TOKEN}}' | `
-          SetContent './src/Services/Services.BackendApi/nuget.config
+              (Get-Content './src/Services/Services.BackendApi/nuget.config -Raw) -Replace 'AZURE_NUGET_TOKEN','${{secrets.AZURE_NUGET_TOKEN}}' | `
+              SetContent './src/Services/Services.BackendApi/nuget.config
         shell: pwsh  
 
       - name: Authenticate in  Azure container registry
