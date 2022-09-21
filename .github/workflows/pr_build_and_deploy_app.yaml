@@ -71,14 +71,15 @@ jobs:
               Set-Content './src/Services/Services.BackendApi/nuget.config'
         shell: pwsh  
 
-      - name: Authenticate in  Azure container registry
-        id: build_docker_image
+      - name: Authenticate in  Azure container registry        
         uses: azure/docker-login@v1
         with:
           login-server: ${{ secrets.ACR_URL }}
           username: ${{ secrets.ACR_USERNAME }}
-          password: ${{ secrets.ACR_PASSWORD }}               
-      - run: |
+          password: ${{ secrets.ACR_PASSWORD }}
+      - name: Build docker image
+        id: build_docker_image               
+        run: |
              <#
              create docker image and push it to ACR 
              image tag has format <ACR_URL>/<ImageName>:<ImageTag> e.g. myImages.azureacr.io/backendapi:12345
