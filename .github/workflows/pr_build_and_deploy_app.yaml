@@ -68,7 +68,7 @@ jobs:
       - name: Replace NuGet Token
         run: | 
               (Get-Content './src/Services/Services.BackendApi/nuget.config' -Raw) -Replace 'AZURE_NUGET_TOKEN','${{secrets.AZURE_NUGET_TOKEN}}' | `
-              SetContent './src/Services/Services.BackendApi/nuget.config'
+              Set-Content './src/Services/Services.BackendApi/nuget.config'
         shell: pwsh  
 
       - name: Authenticate in  Azure container registry
