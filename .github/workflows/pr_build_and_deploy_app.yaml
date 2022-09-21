@@ -29,7 +29,9 @@ env:
 
 
 permissions:
-  id-token: write # required by the Azure Login action 
+  id-token: write # required by the Azure Login action and kubernetes deploy
+  contents: read
+  actions: read
 
 # cancel all other instances of the current worflow that are running 
 # for the same branch e.g.  
