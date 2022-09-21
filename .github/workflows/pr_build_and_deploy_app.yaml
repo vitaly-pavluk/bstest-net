@@ -44,7 +44,7 @@ jobs:
       - name: Checkout sources
         uses: actions/checkout@v3
         with:
-         fetch-dept: 0
+         fetch-depth: 0
 
         # login to Azure with in advance created creds
         # see how to create app, service principal and assign service principal on azure subscription with Contributor role
@@ -77,10 +77,8 @@ jobs:
         with:
           login-server: ${{ secrets.ACR_URL }}
           username: ${{ secrets.ACR_USERNAME }}
-          password: ${{ secrets.ACR_PASSWORD }}         
-
-      - name: Build docker image and push it to Azure container registry 
-        run: |
+          password: ${{ secrets.ACR_PASSWORD }}               
+      - run: |
              <#
              create docker image and push it to ACR 
              image tag has format <ACR_URL>/<ImageName>:<ImageTag> e.g. myImages.azureacr.io/backendapi:12345
@@ -92,11 +90,11 @@ jobs:
 
              $imageUrl="${{secrets.ACR_URL}}/$($Env:DOCKER_IMAGE_NAME)" 
              $imageTag=$($Env:GITHUB_SHA.SubString(0,7))
+             $fullImageUrl="$($imageUrl):$($imageTag)"
+             echo "Image url: $fullImageUrl"
 
-             echo "Image tag: $imageTag"
-
-             docker build -f './src/Services/Services.BackendApi/Dockerfile' --force-rm -t "$($imageUrl):$($imageTag)" "$($Env:GITHUB_WORKSPACE)/src/Services"
-             docker push $imageTag
+             docker build -f './src/Services/Services.BackendApi/Dockerfile' --force-rm -t "$fullImageUrl" "$($Env:GITHUB_WORKSPACE)/src/Services"
+             docker push "$fullImageUrl"
 
              echo "::set-output name=image_url::$imageUrl" # expose full url on acr and docker image  
              echo "::set-output name=image_tag::$imageTag" # expose docker image tag             
