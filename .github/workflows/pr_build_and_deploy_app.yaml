@@ -20,7 +20,7 @@ on:
    branches:
     - main  # branch that pr targets 
    paths:
-    - '/src/Services/Services.BackendApi/**' # restrict changes to only specific path to avoid deploying any other service
+    - 'src/Services/Services.BackendApi/**' # restrict changes to only specific path to avoid deploying any other service
 
 env:
   DOCKER_IMAGE_NAME: backendapi
