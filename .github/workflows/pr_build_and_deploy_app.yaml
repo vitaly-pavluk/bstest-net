@@ -71,13 +71,15 @@ jobs:
           SetContent './src/Services/Services.BackendApi/nuget.config
         shell: pwsh  
 
-      - name: Build docker image and push it to Azure container registry 
+      - name: Authenticate in  Azure container registry
         id: build_docker_image
         uses: azure/docker-login@v1
         with:
           login-server: ${{ secrets.ACR_URL }}
           username: ${{ secrets.ACR_USERNAME }}
           password: ${{ secrets.ACR_PASSWORD }}         
+
+      - name: Build docker image and push it to Azure container registry 
         run: |
              <#
              create docker image and push it to ACR 
