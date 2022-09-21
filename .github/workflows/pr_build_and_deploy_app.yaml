@@ -28,6 +28,8 @@ env:
   SERVICE_NAME: backendapi
 
 
+permissions:
+  id-token: write # required by the Azure Login action 
 
 # cancel all other instances of the current worflow that are running 
 # for the same branch e.g.  
