@@ -92,16 +92,22 @@ jobs:
               "${{github.ref}}" -replace "[^a-zA-Z0-9 -]", "" 
              #> 
 
-             $imageUrl="${{env.ACR_URL}}/$($Env:DOCKER_IMAGE_NAME)" 
-             $imageTag=$($Env:GITHUB_SHA.SubString(0,7))
+             $imageUrl="$($Env.ACR_URL)/$($Env:DOCKER_IMAGE_NAME)" 
+             $imageTag="$($Env:GITHUB_SHA.SubString(0,7))"
              $fullImageUrl="$($imageUrl):$($imageTag)"
-             echo "Image url: $fullImageUrl"
+
+             echo "Full ACR image url with tag: $fullImageUrl"
 
              docker build -f './src/Services/Services.BackendApi/Dockerfile' --force-rm -t "$fullImageUrl" "$($Env:GITHUB_WORKSPACE)/src/Services"
              docker push "$fullImageUrl"
 
+             echo "::echo::on"
+
              echo "::set-output name=image_url::$imageUrl" # expose full url on acr and docker image  
              echo "::set-output name=image_tag::$imageTag" # expose docker image tag             
+
+             echo "::echo::off"
+
         shell: pwsh
 
       - name: Create rlease name
@@ -112,8 +118,9 @@ jobs:
               #>
               $releaseName = "${{env.SERVICE_NAME}}-$($Env:GITHUB_SHA.SubString(0,7))"
               echo "Release name:  $releaseName"
-
+              echo "::echo::on"
               echo "::set-output name=result::$releaseName"
+              echo "::echo::off"
         shell: pwsh
 
       - name: Prepare HEML chart
@@ -125,8 +132,8 @@ jobs:
             releaseName: ${{steps.release-name.output.result}} # e.g. backendapi-b123asd  <servicename>-SHA
             silent: false # set to true for suppress action log output
             overrides: |
-              image.repository: ${{ steps.build_docker_image.output.image_url }}
-              image.tag: ${{ steps.build_docker_image.output.image_tag }}
+              image.repository: ${{ steps.build_docker_image.outputs.image_url }}
+              image.tag: ${{ steps.build_docker_image.outputs.image_tag }}
               fullnameOverride: ${{steps.release-name.outputs.result}}
               image.pullPolicy: "Always"
 
