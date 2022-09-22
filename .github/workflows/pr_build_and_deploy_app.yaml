@@ -92,7 +92,7 @@ jobs:
               "${{github.ref}}" -replace "[^a-zA-Z0-9 -]", "" 
              #> 
 
-             $imageUrl="$($Env.ACR_URL)/$($Env:DOCKER_IMAGE_NAME)" 
+             $imageUrl="$($Env:ACR_URL)/$($Env:DOCKER_IMAGE_NAME)" 
              $imageTag="$($Env:GITHUB_SHA.SubString(0,7))"
              $fullImageUrl="$($imageUrl):$($imageTag)"
 
