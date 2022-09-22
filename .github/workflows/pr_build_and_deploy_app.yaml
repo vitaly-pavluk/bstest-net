@@ -149,7 +149,8 @@ jobs:
           manifests: ${{ steps.bake_helm.outputs.manifestsBundle }}
           namespace: ${{ env.CLUSTER_NAMESPACE }}
           strategy: basic
-          pull-images: false # do not 
+          pull-images: false # do not pull and check docker image
+          annotate-namespace: false
 
         # annotate pods deployed in "Deploy to AKS" 
         # with the Bridge to Kubernetes  
