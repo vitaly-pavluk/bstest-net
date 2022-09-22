@@ -141,16 +141,14 @@ jobs:
    
 
       
-      # Deploy app to AKS
+      # Deploy app to AKS - do not use azure/k8s-deploy since it pollutes K8s resources
+      # with annotations that cannot be turned off 
       - name: Deploy to AKS
-        uses: azure/k8s-deploy@v3.1
-        with:
-          action: deploy
-          manifests: ${{ steps.bake_helm.outputs.manifestsBundle }}
-          namespace: ${{ env.CLUSTER_NAMESPACE }}
-          strategy: basic
-          pull-images: false # do not pull and check docker image
-          annotate-namespace: false
+        run: | 
+              kubectl apply -f ${{ steps.bake_helm.outputs.manifestsBundle }} --insecure-skip-tls-verify --namespace b2kapp
+
+        shell: pwsh 
+
 
         # annotate pods deployed in "Deploy to AKS" 
         # with the Bridge to Kubernetes  
