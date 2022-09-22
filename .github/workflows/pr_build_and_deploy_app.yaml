@@ -26,6 +26,7 @@ env:
   DOCKER_IMAGE_NAME: backendapi
   CLUSTER_NAMESPACE: b2kapp # K8s namespace to be used in deployment
   SERVICE_NAME: backendapi
+  ACR_URL: xtestacr113.azurecr.io
 
 
 permissions:
@@ -76,7 +77,7 @@ jobs:
       - name: Authenticate in  Azure container registry        
         uses: azure/docker-login@v1
         with:
-          login-server: ${{ secrets.ACR_URL }}
+          login-server: ${{ env.ACR_URL }}
           username: ${{ secrets.ACR_USERNAME }}
           password: ${{ secrets.ACR_PASSWORD }}
       - name: Build docker image
@@ -91,7 +92,7 @@ jobs:
               "${{github.ref}}" -replace "[^a-zA-Z0-9 -]", "" 
              #> 
 
-             $imageUrl="${{secrets.ACR_URL}}/$($Env:DOCKER_IMAGE_NAME)" 
+             $imageUrl="${{env.ACR_URL}}/$($Env:DOCKER_IMAGE_NAME)" 
              $imageTag=$($Env:GITHUB_SHA.SubString(0,7))
              $fullImageUrl="$($imageUrl):$($imageTag)"
              echo "Image url: $fullImageUrl"
