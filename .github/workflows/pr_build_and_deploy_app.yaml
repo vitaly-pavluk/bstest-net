@@ -30,7 +30,8 @@ env:
 
 
 permissions:
-  id-token: write # required by the Azure Login action and kubernetes deploy
+# required by the Azure Login action and kubernetes deploy https://github.com/Azure/k8s-deploy
+  id-token: write 
   contents: read
   actions: read
 
@@ -141,11 +142,11 @@ jobs:
 
       
       # Deploy app to AKS
-      # - name: Deploy to AKS
-      #   uses: azure/k8s-deploy@v3.1
-      #   with:
-      #     manifests: ${{ steps.bake_helm.outputs.manifestsBundle }}
-      #     namespace: ${{ env.CLUSTER_NAMESPACE }}
+      - name: Deploy to AKS
+        uses: azure/k8s-deploy@v3.1
+        with:
+          manifests: ${{ steps.bake_helm.outputs.manifestsBundle }}
+          namespace: ${{ env.CLUSTER_NAMESPACE }}
 
         # annotate pods deployed in "Deploy to AKS" 
         # with the Bridge to Kubernetes  
