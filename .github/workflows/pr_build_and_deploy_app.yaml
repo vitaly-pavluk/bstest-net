@@ -147,7 +147,7 @@ jobs:
         with:
           action: deploy
           manifests: ${{ steps.bake_helm.outputs.manifestsBundle }}
-          namespace: ${{ env.CLUSTER_NAMESPACE }}\
+          namespace: ${{ env.CLUSTER_NAMESPACE }}
           strategy: basic
           pull-images: false # do not 
 
