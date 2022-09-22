@@ -127,15 +127,15 @@ jobs:
         uses: azure/k8s-bake@v1
         id: bake_helm
         with:
-            renderEngine: 'helm'            
+            renderEngine: 'helm'   
             helmChart: './src/Services/Services.BackendApi/charts/backendapi/'
             releaseName: ${{steps.release-name.outputs.result}} # e.g. backendapi-b123asd  <servicename>-SHA
             silent: false # set to true for suppress action log output
             overrides: |
-              image.repository: ${{ steps.build_docker_image.outputs.image_url }}
-              image.tag: ${{ steps.build_docker_image.outputs.image_tag }}
-              fullnameOverride: ${{steps.release-name.outputs.result}}
-              image.pullPolicy: "Always"
+              image.repository:${{ steps.build_docker_image.outputs.image_url }}
+              image.tag:${{ steps.build_docker_image.outputs.image_tag }}
+              fullnameOverride:${{steps.release-name.outputs.result}}
+              image.pullPolicy:"Always"
 
    
 
