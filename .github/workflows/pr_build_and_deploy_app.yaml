@@ -129,7 +129,7 @@ jobs:
         with:
             renderEngine: 'helm'            
             helmChart: './src/Services/Services.BackendApi/charts/backendapi/'
-            releaseName: ${{steps.release-name.output.result}} # e.g. backendapi-b123asd  <servicename>-SHA
+            releaseName: ${{steps.release-name.outputs.result}} # e.g. backendapi-b123asd  <servicename>-SHA
             silent: false # set to true for suppress action log output
             overrides: |
               image.repository: ${{ steps.build_docker_image.outputs.image_url }}
