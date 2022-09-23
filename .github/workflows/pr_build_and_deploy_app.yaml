@@ -157,25 +157,19 @@ jobs:
       - name: Add routing labels
         run: |
               <#
-             
+                 Annnotate pod with Bridge To Kubernetes label
                #>
 
               echo "Show pods that will be annotated with B2K labels"
 
-              kubectl get pods  `
-                   --selector="app.kubernetes.io/instance=${{steps.release-name.outputs.result}}"  `
-                   --namespace ${{ env.CLUSTER_NAMESPACE  }}  
+              kubectl get pods --selector="app.kubernetes.io/instance=${{steps.release-name.outputs.result}}"  --namespace ${{ env.CLUSTER_NAMESPACE  }}  
 
               echo "Labeling pod that have app.kubernetes.io/instance=${{steps.release-name.outputs.result}} to route traffic from ${{env.SERVICE_NAME}} "
               
               # Apply label to the new pod deployed by HELM chart and marked as app.kubernetes.io/instance=<service-githubSHA>
               # label will tell B2K to route requests from the original service 
 
-              kubectl label pods `
-                  --selector="app.kubernetes.io/instance=${{steps.release-name.outputs.result}}" `
-                  "routing.visualstudio.io/route-from=${{env.SERVICE_NAME}}"  `
-                  --namespace ${{ env.CLUSTER_NAMESPACE  }} `
-                  --overwrite=true  
+              kubectl label pods --selector="app.kubernetes.io/instance=${{steps.release-name.outputs.result}}" "routing.visualstudio.io/route-from=${{env.SERVICE_NAME}}"  --namespace ${{ env.CLUSTER_NAMESPACE  }} --overwrite=true  
 
               # Annotate POD with HTTP routing header to route requests to this POD when header has specific value 
 
@@ -183,10 +177,7 @@ jobs:
               echo "to accept traffic when HTTP header kubernetes-route-as has value ${{steps.release-name.outputs.result}}"
 
               kubectl annotate pods  `
-                --selector="app.kubernetes.io/instance=${{steps.release-name.outputs.result}}" `
-                "routing.visualstudio.io/route-on-header=kubernetes-route-as=${{steps.release-name.outputs.result}}" ` 
-                --namespace ${{ env.CLUSTER_NAMESPACE }}  `
-                --overwrite=true
+                --selector="app.kubernetes.io/instance=${{steps.release-name.outputs.result}}" "routing.visualstudio.io/route-on-header=kubernetes-route-as=${{steps.release-name.outputs.result}}"  --namespace ${{ env.CLUSTER_NAMESPACE }}  --overwrite=true
         shell: pwsh
           
           
