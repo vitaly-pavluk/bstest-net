@@ -179,10 +179,10 @@ jobs:
               #Annotate POD with HTTP routing header to route requests to this POD when header has specific value 
 
               echo "Annotating pod that have app.kubernetes.io/instance=${{steps.release-name.outputs.result}} 
-              echo "to accept traffic when HTTP header 'kubernetes-route-as' has value ${{steps.generate-valid-branch-name.outputs.result}}"
+              echo "to accept traffic when HTTP header 'kubernetes-route-as' has value ${{steps.release-name.outputs.result}}"
 
               kubectl annotate pods  `
-              --selector="app.kubernetes.io/instance=${{steps.release-name.outputs.result}}" routing.visualstudio.io/route-on-header=kubernetes-route-as=${{steps.generate-valid-branch-name.outputs.result}} ` 
+              --selector="app.kubernetes.io/instance=${{steps.release-name.outputs.result}}" routing.visualstudio.io/route-on-header=kubernetes-route-as=${{steps.release-name.outputs.result}} ` 
               --namespace ${{ env.CLUSTER_NAMESPACE }}  `
               --overwrite=true
         shell: pwsh
