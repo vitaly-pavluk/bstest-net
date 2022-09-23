@@ -137,7 +137,7 @@ jobs:
               image.tag:${{ steps.build_docker_image.outputs.image_tag }}
               fullnameOverride:${{steps.release-name.outputs.result}}
               image.pullPolicy:"Always"
-              ingress.enabled=false 
+              ingress.enabled:false 
 
    
 
