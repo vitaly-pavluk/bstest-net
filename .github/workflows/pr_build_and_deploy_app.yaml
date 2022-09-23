@@ -146,9 +146,9 @@ jobs:
       - name: Deploy to AKS
         run: | 
               kubectl apply -f ${{ steps.bake_helm.outputs.manifestsBundle }} --insecure-skip-tls-verify --namespace ${{env.CLUSTER_NAMESPACE}}
-              
+
               # optionally to make sure that deployment created pod via replicaset and pods are running can wait for it 
-              # kubectl wait pods -n ${{CLUSTER_NAMESPACE}} -l app.kubernetes.io/name=${{steps.release-name.outputs.result}} --for condition=Ready --timeout=90s
+              # kubectl wait pods -n ${{env.CLUSTER_NAMESPACE}} -l "app.kubernetes.io/instance=${{steps.release-name.outputs.result}}" --for condition=Ready --timeout=90s
         shell: pwsh 
 
 
