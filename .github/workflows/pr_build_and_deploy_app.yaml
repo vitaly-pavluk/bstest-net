@@ -176,9 +176,9 @@ jobs:
                   --namespace ${{ env.CLUSTER_NAMESPACE  }}  `
                   --overwrite=true  
 
-              #Annotate POD with HTTP routing header to route requests to this POD when header has specific value 
+              # Annotate POD with HTTP routing header to route requests to this POD when header has specific value 
 
-              echo "Annotating pod that have app.kubernetes.io/instance=${{steps.release-name.outputs.result}} 
+              echo "Annotating pod that have app.kubernetes.io/instance=${{steps.release-name.outputs.result}}" 
               echo "to accept traffic when HTTP header 'kubernetes-route-as' has value ${{steps.release-name.outputs.result}}"
 
               kubectl annotate pods  `
