@@ -1,3 +1,5 @@
+# Routing manager K8s definition based on the original Routing Manager https://github.com/microsoft/mindaro/blob/master/routingmanager.yml
+# and change in Docker Image registry path based on the Issue https://github.com/Azure/Bridge-To-Kubernetes/issues/57  
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -67,18 +69,21 @@ spec:
     spec:
       serviceAccountName: routingmanager-sa
       containers:
-      - name: routingmanager
-        image: azds/routingmanager:stable
-        imagePullPolicy: Always
-        ports:
-        - containerPort: 80
-        env:
-        - name: NAMESPACE
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.namespace
-        - name: BRIDGE_COLLECT_TELEMETRY
-          value: "True"
+       - name: routingmanager
+         # image: azds/routingmanager:stable # original
+         # taken from https://github.com/Azure/Bridge-To-Kubernetes/tree/main/deployment#release-1
+         # based in the issue https://github.com/Azure/Bridge-To-Kubernetes/issues/57#issuecomment-1252171499
+         image: bridgetokubernetes.azurecr.io/routingmanager:latest
+         imagePullPolicy: Always
+         ports:
+         - containerPort: 80
+         env:
+         - name: NAMESPACE
+           valueFrom:
+             fieldRef:
+               fieldPath: metadata.namespace
+         - name: BRIDGE_COLLECT_TELEMETRY
+           value: "True"
       terminationGracePeriodSeconds: 15
 ---
 apiVersion: v1
