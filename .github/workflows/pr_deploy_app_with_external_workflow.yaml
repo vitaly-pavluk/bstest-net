@@ -32,7 +32,7 @@ jobs:
       AZURE_SUBSCRIPTION_ID: ${{secrets.AZURE_SUBSCRIPTION_ID}}
       AKS_CLUSTER_NAME: ${{secrets.CLUSTER_NAME}}
       AKS_RESOURCE_GROUP: ${{secrets.RESOURCE_GROUP}}
-      ACR_URL: ${{env.ACR_URL}}
+      ACR_URL: ${{secrets.ACR_URL}}
       ACR_USERNAME: ${{secrets.ACR_USERNAME}}
       ACR_PASSWORD: ${{secrets.ACR_PASSWORD}}
 
