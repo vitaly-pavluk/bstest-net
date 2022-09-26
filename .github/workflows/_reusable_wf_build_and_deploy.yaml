@@ -32,11 +32,12 @@ on:
      helm_charts_folder_name: 
        type: string
        required: false
-       default: charts
+       default: 'charts'
        description: >
          Name of the folder under the project folder that contains HELM chart
          e.g. for project folder structure Services/TimeClockService/charts/timeclock-service   
          the helm charts folder name is 'charts'  the underlying folde will be inferred in run-time
+
     secrets: 
       NUGET_ACCESS_TOKEN:
         description: >
