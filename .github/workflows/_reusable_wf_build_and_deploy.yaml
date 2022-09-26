@@ -1,0 +1,260 @@
+name: Build and deploy service to K8s 
+on: 
+  workflow_call:
+    inputs:
+     project_path:
+       type: string
+       required: true
+       description: >
+        Repository relative path to the project file e.g. src/ServiceABC/'  without the project file itself 
+        Will be used as path to the docker file and NuGet config
+     k8s_service_name:
+       type: string
+       required: true
+       description: Name of the Kubernetes service - used to identify service to route traffic from e.g. timeclock-service 
+     docker_image_name:
+       type: string
+       required: true
+       description: Image name e.g. backendapi or timeclock-service
+     cluster_namespace:
+      type: string 
+      required: true
+      default:  K8s cluster namespace to deploy service into the  
+     enable_ingress:
+       type: boolean
+       required: false
+       default: true
+       description: >
+          Whether or not to expose service publicly via the ingress controller 
+          if the HELM chart has ingress definition for the service
+          Exposing serice via ingress may not always required if the service going to be tested internally
+          by calling the the Frontend API e.g. BFF -> Serice To Test      
+    secrets: 
+      NUGET_ACCESS_TOKEN:
+        description: >
+         NuGet access token to be replaced in the NuGet.config file 
+         NuGet config file should have AZURE_NUGET_TOKEN token inside so it will be replaced
+         with  the value of NUGET_ACCESS_TOKEN secret to access the ADO internal NuGet feed
+        required: true
+      AZURE_CLIENT_ID:
+        description: 'Azure client identifier'
+        required: true
+      AZURE_TENANT_ID:
+        description: 'Azure tenant identifier'
+        required: true
+      AZURE_SUBSCRIPTION_ID:
+        description: 'Azure subscription identifier'
+        required: true
+      AKS_CLUSTER_NAME: 
+        description: K8S cluster name 
+        required: true
+      AKS_RESOURCE_GROUP:
+        description: Azure resource group of the AKS cluster
+        required: true
+      ACR_URL: 
+        description: Azure Container Registry URL 
+        required: true
+      ACR_USERNAME:
+        description: Login to access the Azure Container Registry
+        required: true
+      ACR_PASSWORD:
+        description: Password to access the Azure Container Registry
+        required: true
+
+# workflow output
+    outputs:
+      ingress_url:
+        description: URL of the service deployed to Kubenetes 
+        value: ${{ jobs.build.outputs.ingress_url }}        
+      routing_header:
+        descrption: >
+         The value of the HTTP header 'kubernetes-route-as' that should be used to route trafic through the service
+      value: ${{ jobs.build.outputs.routing_header }}  
+
+jobs:
+  build:
+   runs-on: ubuntu-latest
+   outputs:
+     ingress_url: ${{ steps.step1.workflow_result.ingress_url }}
+     routing_header: ${{ steps.step2.workflow_result.routing_header }}
+
+   permissions:
+    # required by the Azure Login action and kubernetes deploy https://github.com/Azure/k8s-deploy
+      id-token: write 
+      contents: read
+      actions: read
+   steps: 
+    # - name: Checkout sources
+    #   uses: actions/checkout@v3
+    #   with:
+    #     fetch-depth: 0
+
+    - name: Initialize
+      id: init
+      run: | 
+            # path to the NuGet file 
+            echo "NUGET_FILE_PATH=${{inputs.project_path}}/nuget.config" >> $GITHUB_ENV
+
+            # path to the doker file 
+            echo "DOCKER_FILE_PATH=${{inputs.project_path}}/Dockerfile" >> $GITHUB_ENV
+
+            # fill path to the docker buil context since docker acceps fill path to the context folder or relative "."
+            $projectParentFolder = Split-Path "${{inputs.project_path}}" # getting the parent folder
+            echo "DOCKER_BUILD_CONTEXT_PATH=$(${{github.workspace}}/$projectParentFolder)" >>  $GITHUB_ENV
+
+            # path to the HELM chart folder - path consists of the "project_path"/charts/<first folder under the charts>
+            $helmChartFolder = $(Get-ChildItem "${{inputs.project_path}}/charts"  -Directory  -Name)
+            echo "HELM_CHART_PATH=$($helmChartFolder)" >> $GITHUB_ENV
+            echo "--- environment variables ---"
+            dir Env: | echo
+            echo "--- environment variables ---"
+      shell: pwsh
+      
+    # login to Azure with in advance created creds
+    # see how to create app, service principal and assign service principal on azure subscription with Contributor role
+    # https://learn.microsoft.com/en-us/azure/developer/github/connect-from-azure?tabs=azure-cli%2Cwindows#create-an-azure-active-directory-application-and-service-principal
+    - name: Azure Login 
+      uses: azure/login@v1
+      with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      # set Kubectl context  see more https://github.com/Azure/aks-set-context#example
+    - name: Set Azure Context  
+      uses: azure/aks-set-context@v3
+      with:          
+        cluster-name: ${{ secrets.AKS_CLUSTER_NAME }}
+        resource-group: ${{ secrets.AKS_RESOURCE_GROUP }}  
+
+    - name: Replace NuGet Token
+      run: | 
+            <# (Get-Content "./src/Services/Services.BackendApi/nuget.config" -Raw) -Replace 'AZURE_NUGET_TOKEN','${{secrets.AZURE_NUGET_TOKEN}}' | `
+                Set-Content './src/Services/Services.BackendApi/nuget.config' 
+            #>
+
+             (Get-Content "$($Env:NUGET_FILE_PATH)" -Raw) -Replace 'AZURE_NUGET_TOKEN',"${{secrets.AZURE_NUGET_TOKEN}}" | `
+              Set-Content "$($Env:NUGET_FILE_PATH)"
+      shell: pwsh  
+    - name: Authenticate in  Azure container registry        
+      uses: azure/docker-login@v1
+      with:
+        login-server: ${{ secrets.ACR_URL }}
+        username: ${{ secrets.ACR_USERNAME }}
+        password: ${{ secrets.ACR_PASSWORD }}
+
+
+    - name: Build docker image
+      id: build_docker_image               
+      run: |
+            <#
+            create docker image and push it to ACR 
+            Image ULR has format <ACR_URL>/<ImageName>:<ImageTag> e.g. "myAureACR.azureacr.io/backendapi:12345"
+            script below creates image and tags it with first 7 digits of github PR SHA 
+            (The commit SHA that triggered the workflow. ) 
+
+            if instead of github commit SHA the branch name should be used to tag docker image 
+            it is possible but all special characters should be 
+            replaced with empty string e.g.   
+            "${{github.ref}}" -replace "[^a-zA-Z0-9 -]", "" 
+            #> 
+
+            $imageUrl="${{secrets.ACR_URL}}/${{inputs.docker_image_name}}" 
+            $imageTag="${{github.sha}}".SubString(0,7)
+            $fullImageUrl="$($imageUrl):$($imageTag)"
+
+            echo "Full ACR image url with tag: $fullImageUrl"
+
+            docker build -f "$Env:DOCKER_FILE_PATH" --force-rm -t "$fullImageUrl" "$Env:DOCKER_BUILD_CONTEXT_PATH"
+            docker push "$fullImageUrl"
+
+            echo "::echo::on"
+
+            echo "::set-output name=image_url::$imageUrl" # expose full url on acr and docker image  
+            echo "::set-output name=image_tag::$imageTag" # expose docker image tag             
+
+            echo "::echo::off"
+      shell: pwsh
+
+    - name: Create rlease name
+      id: release-name
+      run: |
+              <#
+                generate release name as <servicename>-<First7SymbolsOfLastCommitSHA>    
+              #>
+              $releaseName = "${{inputs.k8s_service_name}}-" + "${{github.sha}}".SubString(0,7)
+              echo "Release name:  $releaseName"
+              echo "::echo::on"
+              echo "::set-output name=result::$releaseName"
+              echo "::echo::off"
+      shell: pwsh
+    - name: Prepare HEML chart
+      uses: azure/k8s-bake@v1
+      id: bake_helm
+      with:
+        renderEngine: 'helm'   
+        helmChart:  ${{env.HELM_CHART_PATH}}
+        releaseName: ${{steps.release-name.outputs.result}} # e.g. backendapi-b123asd  <servicename>-SHA
+        silent: false # set to true for suppress action log output
+        overrides: |
+                    image.repository:${{ steps.build_docker_image.outputs.image_url }}
+                    image.tag:${{ steps.build_docker_image.outputs.image_tag }}
+                    fullnameOverride:${{ steps.release-name.outputs.result }}
+                    image.pullPolicy:"Always"
+                    ingress.enabled:${{ inputs.enable_ingress }}  
+
+        # Deploy app to AKS - do not use azure/k8s-deploy since it pollutes K8s resources
+      # with annotations that cannot be turned off 
+    - name: Deploy to AKS
+      run: | 
+            kubectl apply -f ${{ steps.bake_helm.outputs.manifestsBundle }} --insecure-skip-tls-verify --namespace ${{inputs.cluster_namespace}}
+
+            # optionally to make sure that deployment created pod via replicaset and pods are running can wait for it 
+            # kubectl wait pods -n ${{inputs.cluster_namespace}} -l "app.kubernetes.io/instance=${{steps.release-name.outputs.result}}" --for condition=Ready --timeout=90s
+      shell: pwsh 
+        # annotate pods deployed in "Deploy to AKS" 
+        # with the Bridge to Kubernetes  
+    - name: Add routing labels
+      run: |
+              <#
+                 Annnotate pod with Bridge To Kubernetes label
+               #>
+
+              echo "Show pods that will be annotated with B2K labels"
+
+              kubectl get pods --selector="app.kubernetes.io/instance=${{steps.release-name.outputs.result}}"  --namespace ${{inputs.cluster_namespace}}
+
+              echo " - Labeling pod that have app.kubernetes.io/instance=${{steps.release-name.outputs.result}} to route traffic from ${{inputs.k8s_service_name}} "
+              
+              # Apply label to the new pod deployed by HELM chart and marked as app.kubernetes.io/instance=<service-githubSHA>
+              # label will tell B2K to route requests from the original service 
+
+              kubectl label pods --selector="app.kubernetes.io/instance=${{steps.release-name.outputs.result}}" "routing.visualstudio.io/route-from=${{inputs.k8s_service_name}}"  --namespace ${{inputs.cluster_namespace}} --overwrite=true  
+
+              # Annotate POD with HTTP routing header to route requests to this POD when header has specific value 
+
+              echo "- Annotating pod that have app.kubernetes.io/instance=${{steps.release-name.outputs.result}}" 
+              echo "- to accept traffic when HTTP header kubernetes-route-as has value ${{steps.release-name.outputs.result}}"
+
+              kubectl annotate pods  --selector="app.kubernetes.io/instance=${{steps.release-name.outputs.result}}" "routing.visualstudio.io/route-on-header=kubernetes-route-as=${{steps.release-name.outputs.result}}"  --namespace ${{inputs.cluster_namespace}}  --overwrite=true
+      shell: pwsh
+
+    - name:  Return workflow output result
+      id: workflow_result
+      run : |
+              <#
+              #>
+
+              $ingressEnabled = "${{inputs.enable_ingress}}"
+              if ([boolean]$ingressEnabled -eq $False )
+              {
+                $ingressUrl="";
+                echo "::notice ::Service was deployed with the disabled Ingress controller no service URL will be publicy available"
+              }
+              else
+              {
+                $ingressUrl = $(kubectl get ingresses -n ${{inputs.cluster_namespace}} -o=custom-columns=HOST:.spec.rules[0].host  | Select-String -Pattern "${{steps.release-name.outputs.result}}*" -List))
+              }
+              
+              echo "::set-output name=ingress_url::$ingressUrl"
+              echo "::set-output name=routing_header::${{steps.release-name.outputs.result}}"
+      shell: pwsh

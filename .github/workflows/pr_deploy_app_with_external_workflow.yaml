@@ -1,0 +1,48 @@
+name: Build & Deploy Web Api
+
+on: 
+ pull_request:
+   branches:
+    - main  # branch that pr targets 
+   paths:
+    - 'src/Services/Services.BackendApi/**' # restrict changes to only specific path to avoid deploying any other service
+env:
+ ACR_URL: xtestacr113.azurecr.io
+
+permissions:
+# required by the Azure Login action and kubernetes deploy https://github.com/Azure/k8s-deploy
+  id-token: write 
+  contents: read
+  actions: read
+
+jobs:
+  Backend_API_build_and_deploy:
+    name: Buld Backend API service from pull request and deploy to AKS 
+    uses: vitaly-pavluk/bstest-net/.github/workflows/_reusable_wf_build_and_deploy.yaml@main
+    with: 
+      project_path: 'src/Services/Services.BackendApi'
+      k8s_service_name: backendapi
+      docker_image_name: backendapi
+      cluster_namespace: b2kapp
+      enable_ingress: false
+    secrets:
+      NUGET_ACCESS_TOKEN: ${{secrets.AZURE_NUGET_TOKEN}}
+      AZURE_CLIENT_ID: ${{secrets.AZURE_CLIENT_ID}}
+      AZURE_TENANT_ID: ${{secrets.AZURE_TENANT_ID}}
+      AZURE_SUBSCRIPTION_ID: ${{secrets.AZURE_SUBSCRIPTION_ID}}
+      AKS_CLUSTER_NAME: ${{secrets.CLUSTER_NAME}}
+      AKS_RESOURCE_GROUP: ${{secrets.RESOURCE_GROUP}}
+      ACR_URL: ${{env.ACR_URL}}
+      ACR_USERNAME: ${{secrets.ACR_USERNAME}}
+      ACR_PASSWORD: ${{secrets.ACR_PASSWORD}}
+
+  run_tests:
+   needs: [Backend_API_build_and_deploy]
+   runs-on: ubuntu-latest
+   name: Run tests against service
+   steps:
+     - name: Run tests agains the service URL
+       run: | 
+        echo "::notice ::Service was exposed via the URL: ${{needs.Backend_API_build_and_deploy.outputs.ingress_url}}"
+        echo "::notice ::Value of the HTTP header 'kubernetes-route-as' -  ${{needs.Backend_API_build_and_deploy.outputs.routing_header}}"
+       shell: pwsh 
