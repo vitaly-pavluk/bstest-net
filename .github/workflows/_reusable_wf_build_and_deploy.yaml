@@ -92,8 +92,8 @@ jobs:
             echo "Current location: $(Get-Location)" 
             echo "Workspace: ${{github.workspace}}"
 
-            echo "${{toJSON(github)}}"
-            echo "${{toJSON(inputs)}}"
+            # echo "${{toJSON(github)}}"
+            # echo "${{toJSON(inputs)}}"
 
             # path to the NuGet file 
             echo "NUGET_FILE_PATH=${{inputs.project_path}}/nuget.config" >> $GITHUB_ENV
@@ -118,11 +118,7 @@ jobs:
             echo  "HC: $helmChartFolder"   
             
             echo "HELM_CHART_PATH=$($helmChartFolder)" >> $GITHUB_ENV
-
-            echo "--- environment variables ---"
-            dir Env: | echo
-            echo "--- environment variables ---"
-
+            
             Exit -1
       shell: pwsh
       
