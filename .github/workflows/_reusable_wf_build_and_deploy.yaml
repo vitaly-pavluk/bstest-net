@@ -88,7 +88,8 @@ jobs:
 
     - name: Initialize
       id: init
-      run: | 
+      run: |
+            echo "Current location: $(Get-Location)" 
             # path to the NuGet file 
             echo "NUGET_FILE_PATH=${{inputs.project_path}}/nuget.config" >> $GITHUB_ENV
 
@@ -100,9 +101,12 @@ jobs:
             $dockerBuildContextPath= "${{github.workspace}}" + "/" + $projectParentFolder    
 
             echo "DOCKER_BUILD_CONTEXT_PATH=$($dockerBuildContextPath)" >>  $GITHUB_ENV
-
+            
             # path to the HELM chart folder - path consists of the "project_path"/charts/<first folder under the charts>
+            Get-ChildItem "${{inputs.project_path}}" | echo
+
             $helmChartFolder = $(Get-ChildItem "${{inputs.project_path}}/charts"  -Directory  -Name)
+            echo 
             echo "HELM_CHART_PATH=$($helmChartFolder)" >> $GITHUB_ENV
             echo "--- environment variables ---"
             dir Env: | echo
