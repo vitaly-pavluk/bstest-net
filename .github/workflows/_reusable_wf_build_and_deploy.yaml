@@ -85,7 +85,11 @@ jobs:
     #   uses: actions/checkout@v3
     #   with:
     #     fetch-depth: 0
-
+    - name: checkout sources
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+        
     - name: Initialize
       id: init
       run: |
