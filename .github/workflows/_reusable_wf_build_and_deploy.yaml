@@ -75,8 +75,8 @@ jobs:
   build:
    runs-on: ubuntu-latest
    outputs:
-     ingress_url: ${{ steps.step1.workflow_result.ingress_url }}
-     routing_header: ${{ steps.step2.workflow_result.routing_header }}
+     ingress_url: ${{ steps.workflow_result.ingress_url }}
+     routing_header: ${{ steps.workflow_result.routing_header }}
 
    permissions:
     # required by the Azure Login action and kubernetes deploy https://github.com/Azure/k8s-deploy
