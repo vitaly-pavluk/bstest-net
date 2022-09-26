@@ -103,7 +103,7 @@ jobs:
             echo "DOCKER_BUILD_CONTEXT_PATH=$($dockerBuildContextPath)" >>  $GITHUB_ENV
             
             # path to the HELM chart folder - path consists of the "project_path"/charts/<first folder under the charts>
-            Get-ChildItem "${{inputs.project_path}}" | echo
+            Get-ChildItem "./${{inputs.project_path}}" | echo
 
             $helmChartFolder = $(Get-ChildItem "${{inputs.project_path}}/charts"  -Directory  -Name)
             echo 
