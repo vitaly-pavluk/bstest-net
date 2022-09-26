@@ -91,7 +91,7 @@ jobs:
       run: |
             echo "Current location: $(Get-Location)" 
             echo "Workspace: ${{github.workspace}}"
-            Get-ChildItem -Recurse -Directory 
+            Get-ChildItem "$($Env:GITHUB_WORKSPACE)" -Recurse -Directory | echo 
 
             # path to the NuGet file 
             echo "NUGET_FILE_PATH=${{inputs.project_path}}/nuget.config" >> $GITHUB_ENV
