@@ -81,25 +81,17 @@ jobs:
   #     contents: read
   #     actions: read
    steps: 
-    # - name: Checkout sources
-    #   uses: actions/checkout@v3
-    #   with:
-    #     fetch-depth: 0
     - name: checkout sources
       uses: actions/checkout@v3
       with:
         fetch-depth: 0
-        
+
     - name: Initialize
       id: init
       run: |
             echo "Current location: $(Get-Location)" 
             echo "Workspace: ${{github.workspace}}"
 
-            Get-ChildItem "$($Env:GITHUB_WORKSPACE)" -Recurse -Directory | echo 
-            cd "$($Env:GITHUB_WORKSPACE)/src"
-
-            Get-ChildItem -Recurse -Directory | echo  
 
             # path to the NuGet file 
             echo "NUGET_FILE_PATH=${{inputs.project_path}}/nuget.config" >> $GITHUB_ENV
@@ -114,13 +106,13 @@ jobs:
             echo "DOCKER_BUILD_CONTEXT_PATH=$($dockerBuildContextPath)" >>  $GITHUB_ENV
             
             # path to the HELM chart folder - path consists of the "project_path"/charts/<first folder under the charts>
-           
-            <# 
-            Get-ChildItem "${{github.workspace}}/${{inputs.project_path}}" 
+                       
+            Get-ChildItem "${{github.workspace}}/${{inputs.project_path}}" -Directory -Name  | echo
+
             $helmChartFolder = $(Get-ChildItem "${{inputs.project_path}}/charts"  -Directory  -Name)
             echo 
             echo "HELM_CHART_PATH=$($helmChartFolder)" >> $GITHUB_ENV
-            #>
+
             echo "--- environment variables ---"
             dir Env: | echo
             echo "--- environment variables ---"
