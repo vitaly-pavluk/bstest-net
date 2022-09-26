@@ -15,8 +15,18 @@ permissions:
   contents: read
   actions: read
 
+   
 jobs:
+  Get_Sources:
+   runs-on: ubuntu-latest
+   steps:
+    - name: get sources
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+
   Backend_API_build_and_deploy:
+    needs: Get_Sources    
     name: Buld Backend API service from pull request and deploy to AKS 
     uses: vitaly-pavluk/bstest-net/.github/workflows/_reusable_wf_build_and_deploy.yaml@main
     with: 
