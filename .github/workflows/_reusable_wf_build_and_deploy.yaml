@@ -97,7 +97,7 @@ jobs:
 
             # fill path to the docker buil context since docker acceps fill path to the context folder or relative "."
             $projectParentFolder = Split-Path "${{inputs.project_path}}" # getting the parent folder
-            echo "DOCKER_BUILD_CONTEXT_PATH=$(${{github.workspace}}/$projectParentFolder)" >>  $GITHUB_ENV
+            echo "DOCKER_BUILD_CONTEXT_PATH=$(${{github.workspace}}/$($projectParentFolder))" >>  $GITHUB_ENV
 
             # path to the HELM chart folder - path consists of the "project_path"/charts/<first folder under the charts>
             $helmChartFolder = $(Get-ChildItem "${{inputs.project_path}}/charts"  -Directory  -Name)
