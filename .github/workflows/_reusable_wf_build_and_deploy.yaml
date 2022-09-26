@@ -120,7 +120,7 @@ jobs:
 
             $helmChartFolderPath = Join-Path "./" "${{inputs.project_path}}" "${{inputs.helm_charts_folder_name}}" $helmChartsFolderName
 
-            echo  "HC: $($helmChartFolderPath)"   
+            echo  "Helm chart path: $($helmChartFolderPath)"   
             
             echo "HELM_CHART_PATH=$($helmChartFolderPath)" >> $GITHUB_ENV
 
