@@ -60,15 +60,12 @@ on:
       ACR_PASSWORD:
         description: Password to access the Azure Container Registry
         required: true
-
-# workflow output
     outputs:
       ingress_url:
         description: URL of the service deployed to Kubenetes 
         value: ${{ jobs.build.outputs.ingress_url }}        
       routing_header:
-        description: >
-         The value of the HTTP header 'kubernetes-route-as' that should be used to route trafic through the service
+        description: The value of the HTTP header 'kubernetes-route-as' that should be used to route trafic through the service
       value: ${{ jobs.build.outputs.routing_header }}  
 
 jobs:
