@@ -84,11 +84,7 @@ jobs:
      ingress_url: ${{ steps.workflow_result.ingress_url }}
      routing_header: ${{ steps.workflow_result.routing_header }}
 
-  #  permissions:
-  #   # required by the Azure Login action and kubernetes deploy https://github.com/Azure/k8s-deploy
-  #     id-token: write 
-  #     contents: read
-  #     actions: read
+
    steps: 
     - name: checkout sources
       uses: actions/checkout@v3
@@ -115,16 +111,18 @@ jobs:
 
             echo "DOCKER_BUILD_CONTEXT_PATH=$($dockerBuildContextPath)" >>  $GITHUB_ENV
             
-            # path to the HELM chart folder - path consists of the "project_path"/charts/<first folder under the charts>
-                       
-            echo  $(Get-ChildItem "${{github.workspace}}/${{inputs.project_path}}/${{inputs.helm_charts_folder_name}}" -Directory -Name)
+            <# path to the HELM chart folder - path consists of the "project_path"/charts/<first folder under the charts>
+              to get this path need to get first folder name under the "charts" folder and then combine together
+              paths in way  "project path inside repo folder" (.src/service_folder) "charts folder" (charts) "chart name folder" (e.g. timeclock-service)
+              so final path will be "./src/my_service_api/charts/my-service"             
+            #>
+            $helmChartsFolderName = $(Get-ChildItem "${{github.workspace}}/${{inputs.project_path}}/${{inputs.helm_charts_folder_name}}" -Directory -Name)
 
-            $helmChartFolder = Join-Path "${{inputs.project_path}}" "${{inputs.helm_charts_folder_name}}" $(Get-ChildItem "${{inputs.project_path}}/${{inputs.helm_charts_folder_name}}"  -Directory  -Name)
+            $helmChartFolderPath = Join-Path "./" "${{inputs.project_path}}" "${{inputs.helm_charts_folder_name}}" $helmChartsFolderName
 
-            echo  "HC: $($helmChartFolder)"   
+            echo  "HC: $($helmChartFolderPath)"   
             
-            echo "HELM_CHART_PATH=$($helmChartFolder)"
-            echo "HELM_CHART_PATH=$($helmChartFolder)" >> $GITHUB_ENV
+            echo "HELM_CHART_PATH=$($helmChartFolderPath)" >> $GITHUB_ENV
 
             Exit -1
       shell: pwsh
