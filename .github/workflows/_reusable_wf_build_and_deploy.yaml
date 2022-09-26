@@ -91,6 +91,7 @@ jobs:
       run: |
             echo "Current location: $(Get-Location)" 
             echo "Workspace: ${{github.workspace}}"
+
             echo "${{toJSON(github)}}"
             echo "${{toJSON(inputs)}}"
 
@@ -101,8 +102,10 @@ jobs:
             echo "DOCKER_FILE_PATH=${{inputs.project_path}}/Dockerfile" >> $GITHUB_ENV
 
             # fill path to the docker buil context since docker acceps fill path to the context folder or relative "."
-            $projectParentFolder = $(Split-Path "${{inputs.project_path}}") # getting the parent folder
-            $dockerBuildContextPath= "${{github.workspace}}" + "/" + $projectParentFolder    
+
+            $projectParentFolder = $(Split-Path "${{inputs.project_path}}")
+            $dockerBuildContextPath= "${{github.workspace}}/$projectParentFolder" 
+            echo $dockerBuildContextPath
 
             echo "DOCKER_BUILD_CONTEXT_PATH=$($dockerBuildContextPath)" >>  $GITHUB_ENV
             
