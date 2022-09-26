@@ -108,9 +108,9 @@ jobs:
             
             # path to the HELM chart folder - path consists of the "project_path"/charts/<first folder under the charts>
                        
-            echo  $(Get-ChildItem "${{github.workspace}}/${{inputs.project_path}}" -Directory -Name)
+            echo  $(Get-ChildItem "${{github.workspace}}/${{inputs.project_path}}/charts" -Directory -Name)
 
-            $helmChartFolder = $(Get-ChildItem "${{inputs.project_path}}/charts"  -Directory  -Name)
+            $helmChartFolder = $(Get-ChildItem "${{inputs.project_path}}/charts/"  -Directory  -Name)
 
             echo  "HC: $($helmChartFolder)"   
             
