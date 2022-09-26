@@ -67,7 +67,7 @@ on:
         description: URL of the service deployed to Kubenetes 
         value: ${{ jobs.build.outputs.ingress_url }}        
       routing_header:
-        descrption: >
+        description: >
          The value of the HTTP header 'kubernetes-route-as' that should be used to route trafic through the service
       value: ${{ jobs.build.outputs.routing_header }}  
 
