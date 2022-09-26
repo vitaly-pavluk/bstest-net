@@ -2,41 +2,41 @@ name: Build and deploy service to K8s
 on: 
   workflow_call:
     inputs:
-     project_path:
-       type: string
-       required: true
-       description: >
-        Repository relative path to the project file e.g. src/ServiceABC/'  without the project file itself 
-        Will be used as path to the docker file and NuGet config
-     k8s_service_name:
-       type: string
-       required: true
-       description: Name of the Kubernetes service - used to identify service to route traffic from e.g. timeclock-service 
-     docker_image_name:
-       type: string
-       required: true
-       description: Image name e.g. backendapi or timeclock-service
-     cluster_namespace:
-      type: string 
-      required: true
-      default:  K8s cluster namespace to deploy service into the  
-     enable_ingress:
-       type: boolean
-       required: false
-       default: true
-       description: >
-          Whether or not to expose service publicly via the ingress controller 
-          if the HELM chart has ingress definition for the service
-          Exposing serice via ingress may not always required if the service going to be tested internally
-          by calling the the Frontend API e.g. BFF -> Serice To Test    
-     helm_charts_folder_name: 
-       type: string
-       required: false
-       default: 'charts'
-       description: >
-         Name of the folder under the project folder that contains HELM chart
-         e.g. for project folder structure Services/TimeClockService/charts/timeclock-service   
-         the helm charts folder name is 'charts'  the underlying folde will be inferred in run-time
+      project_path:
+        type: string
+        required: true
+        description: >
+          Repository relative path to the project file e.g. src/ServiceABC/'  without the project file itself 
+          Will be used as path to the docker file and NuGet config
+      k8s_service_name:
+        type: string
+        required: true
+        description: Name of the Kubernetes service - used to identify service to route traffic from e.g. timeclock-service 
+      docker_image_name:
+        type: string
+        required: true
+        description: Image name e.g. backendapi or timeclock-service
+      cluster_namespace:
+        type: string 
+        required: true
+        default:  K8s cluster namespace to deploy service into the  
+      enable_ingress:
+        type: boolean
+        required: false
+        default: true
+        description: >
+            Whether or not to expose service publicly via the ingress controller 
+            if the HELM chart has ingress definition for the service
+            Exposing serice via ingress may not always required if the service going to be tested internally
+            by calling the the Frontend API e.g. BFF -> Serice To Test    
+      helm_charts_folder_name: 
+        type: string
+        required: false
+        default: 'charts'
+        description: >
+          Name of the folder under the project folder that contains HELM chart
+          e.g. for project folder structure Services/TimeClockService/charts/timeclock-service   
+          the helm charts folder name is 'charts'  the underlying folde will be inferred in run-time
 
     secrets: 
       NUGET_ACCESS_TOKEN:
@@ -117,9 +117,9 @@ jobs:
             
             # path to the HELM chart folder - path consists of the "project_path"/charts/<first folder under the charts>
                        
-            echo  $(Get-ChildItem "${{github.workspace}}/${{inputs.project_path}}/${{helm_charts_folder_name}}" -Directory -Name)
+            echo  $(Get-ChildItem "${{github.workspace}}/${{inputs.project_path}}/${{inputs.helm_charts_folder_name}}" -Directory -Name)
 
-            $helmChartFolder = Join-Path "${{inputs.project_path}}" "${{helm_charts_folder_name}}" $(Get-ChildItem "${{inputs.project_path}}/${{helm_charts_folder_name}}"  -Directory  -Name)
+            $helmChartFolder = Join-Path "${{inputs.project_path}}" "${{inputs.helm_charts_folder_name}}" $(Get-ChildItem "${{inputs.project_path}}/${{inputs.helm_charts_folder_name}}"  -Directory  -Name)
 
             echo  "HC: $($helmChartFolder)"   
             
