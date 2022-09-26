@@ -92,9 +92,6 @@ jobs:
             echo "Current location: $(Get-Location)" 
             echo "Workspace: ${{github.workspace}}"
 
-            # echo "${{toJSON(github)}}"
-            # echo "${{toJSON(inputs)}}"
-
             # path to the NuGet file 
             echo "NUGET_FILE_PATH=${{inputs.project_path}}/nuget.config" >> $GITHUB_ENV
 
@@ -115,10 +112,10 @@ jobs:
 
             $helmChartFolder = $(Get-ChildItem "${{inputs.project_path}}/charts"  -Directory  -Name)
 
-            echo  "HC: $helmChartFolder"   
+            echo  "HC: $($helmChartFolder)"   
             
             echo "HELM_CHART_PATH=$($helmChartFolder)" >> $GITHUB_ENV
-            
+
             Exit -1
       shell: pwsh
       
