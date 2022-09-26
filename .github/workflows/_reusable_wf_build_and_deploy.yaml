@@ -63,23 +63,23 @@ on:
     outputs:
       ingress_url:
         description: URL of the service deployed to Kubenetes 
-        value: ${{ jobs.build.outputs.ingress_url }}        
+        value: ${{ jobs.build_n_deploy.outputs.ingress_url }}        
       routing_header:
         description: The value of the HTTP header 'kubernetes-route-as' that should be used to route trafic through the service
-      value: ${{ jobs.build.outputs.routing_header }}  
+        value: ${{ jobs.build_n_deploy.outputs.routing_header }}  
 
 jobs:
-  build:
+  build_n_deploy:
    runs-on: ubuntu-latest
    outputs:
      ingress_url: ${{ steps.workflow_result.ingress_url }}
      routing_header: ${{ steps.workflow_result.routing_header }}
 
-   permissions:
-    # required by the Azure Login action and kubernetes deploy https://github.com/Azure/k8s-deploy
-      id-token: write 
-      contents: read
-      actions: read
+  #  permissions:
+  #   # required by the Azure Login action and kubernetes deploy https://github.com/Azure/k8s-deploy
+  #     id-token: write 
+  #     contents: read
+  #     actions: read
    steps: 
     # - name: Checkout sources
     #   uses: actions/checkout@v3
