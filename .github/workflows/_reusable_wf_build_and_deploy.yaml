@@ -123,8 +123,7 @@ jobs:
             echo  "Helm chart path: $($helmChartFolderPath)"   
             
             echo "HELM_CHART_PATH=$($helmChartFolderPath)" >> $GITHUB_ENV
-
-            Exit -1
+          
       shell: pwsh
       
     # login to Azure with in advance created creds

@@ -20,13 +20,15 @@ on:
    branches:
     - main  # branch that pr targets 
    paths:
-    - 'src/Services/Services.BackendApi/**' # restrict changes to only specific path to avoid deploying any other service
+   # restrict changes to only specific path to avoid deploying any other service
+    - 'src/Services/Services.BackendApi/**' 
 
 env:
   DOCKER_IMAGE_NAME: backendapi
   CLUSTER_NAMESPACE: b2kapp # K8s namespace to be used in deployment
   SERVICE_NAME: backendapi
   ACR_URL: xtestacr113.azurecr.io
+  ENABLE_INGRESS: false
 
 
 permissions:
@@ -137,10 +139,7 @@ jobs:
               image.tag:${{ steps.build_docker_image.outputs.image_tag }}
               fullnameOverride:${{steps.release-name.outputs.result}}
               image.pullPolicy:"Always"
-              ingress.enabled:false 
-
-   
-
+              ingress.enabled: ${{env.ENABLE_INGRESS}}   
       
       # Deploy app to AKS - do not use azure/k8s-deploy since it pollutes K8s resources
       # with annotations that cannot be turned off 
@@ -179,6 +178,32 @@ jobs:
 
               kubectl annotate pods  --selector="app.kubernetes.io/instance=${{steps.release-name.outputs.result}}" "routing.visualstudio.io/route-on-header=kubernetes-route-as=${{steps.release-name.outputs.result}}"  --namespace ${{ env.CLUSTER_NAMESPACE }}  --overwrite=true
         shell: pwsh
+
+      - name:  Return workflow output result
+        id: workflow_result
+        run : |
+              <#
+               Get ingress URL if the ingress was enabled for service or just value of the HTTP routing header 'kubernetes-route-as'  
+              #>
+
+              $ingressEnabled = "${{env.ENABLE_INGRESS}}"
+              if ([boolean]$ingressEnabled -eq $False )
+              {
+                $ingressUrl="";
+                echo "::notice ::Service was deployed with the disabled Ingress controller no service URL will be publicy available. Service"
+                echo "::notice ::Service can be accessed indirectly with HTTP header 'kubernetes-route-as:${{steps.release-name.outputs.result}}'"
+              }
+              else
+              {
+                $ingressUrl = $(kubectl get ingresses -n ${{ env.CLUSTER_NAMESPACE  }}  -o=custom-columns=HOST:.spec.rules[0].host  | Select-String -Pattern "${{steps.release-name.outputs.result}}*" -List))
+
+                echo "Service exposed via Ingress URL: $ingressUrl"
+              }
+              
+              echo "::set-output name=ingress_url::$ingressUrl"
+              echo "::set-output name=routing_header::${{steps.release-name.outputs.result}}"
+        shell: pwsh
+
           
           
         
