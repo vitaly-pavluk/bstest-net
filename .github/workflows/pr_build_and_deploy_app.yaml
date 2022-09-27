@@ -202,12 +202,12 @@ jobs:
               if ([boolean]$ingressEnabled -eq $False )
               {
                 $ingressUrl="";
-                echo "::notice ::Service was deployed with the disabled Ingress controller no service URL will be publicy available. Service"
+                echo "::notice ::Service was deployed with the disabled Ingress controller no service URL will be publicy available."
                 echo "::notice ::Service can be accessed indirectly with HTTP header 'kubernetes-route-as:${{steps.release-name.outputs.result}}'"
               }
               else
               {
-                $ingressUrl = $(kubectl get ingresses -n ${{ env.CLUSTER_NAMESPACE  }}  -o=custom-columns=HOST:.spec.rules[0].host  | Select-String -Pattern "${{steps.release-name.outputs.result}}*" -List))
+                $ingressUrl = $(kubectl get ingresses -n ${{ env.CLUSTER_NAMESPACE  }}  -o=custom-columns=HOST:.spec.rules[0].host  | Select-String -Pattern "${{steps.release-name.outputs.result}}*" -List)
 
                 echo "Service exposed via Ingress URL: $ingressUrl"
               }
