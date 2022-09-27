@@ -28,7 +28,17 @@ env:
   CLUSTER_NAMESPACE: b2kapp # K8s namespace to be used in deployment
   SERVICE_NAME: backendapi
   ACR_URL: xtestacr113.azurecr.io
+  # wherer or not deploy Ingress for the service. 
+  # If service should be tested with direct HTTP call the Ingress should be deployed
+  # if service should be tested in conjunction with other ones 
+  #   e.g. backend API service should be tested by sending request to the Front-end API service [FrontendAPI->--(1-N Other Services)-> BackendAPI--(1-N)->Other Services]
+  #    it make sence to avoid deploying Ingress for backend api 
   ENABLE_INGRESS: false
+  # to make repetative builds, that triggered against the same pull request that has same commits,
+  # deterministic and cleanup K8s resources deployed in previous build run use the last commit SHA
+  # instead of the merge commit SHA that is in the  GITHUB_SHA env variable  or ${{ github.sha}} action context variable
+  # if new commits were added to PR between the two subsequent builds the "new last commit SHA" appears so no K8s resource cleanup made
+  LAST_COMMIT_SHA: ${{ github.event.pull_request.head.sha }}
 
 
 permissions:
@@ -96,7 +106,7 @@ jobs:
              #> 
 
              $imageUrl="$($Env:ACR_URL)/$($Env:DOCKER_IMAGE_NAME)" 
-             $imageTag="$($Env:GITHUB_SHA.SubString(0,7))"
+             $imageTag= $($Env:LAST_COMMIT_SHA.SubString(0,7))
              $fullImageUrl="$($imageUrl):$($imageTag)"
 
              echo "Full ACR image url with tag: $fullImageUrl"
@@ -119,7 +129,7 @@ jobs:
               <#
                 generate release name as <servicename>-<First7SymbolsOfLastCommitSHA>    
               #>
-              $releaseName = "${{env.SERVICE_NAME}}-$($Env:GITHUB_SHA.SubString(0,7))"
+              $releaseName = "${{env.SERVICE_NAME}}-$($Env:LAST_COMMIT_SHA.SubString(0,7))"
               echo "Release name:  $releaseName"
               echo "::echo::on"
               echo "::set-output name=result::$releaseName"
@@ -139,16 +149,18 @@ jobs:
               image.tag:${{ steps.build_docker_image.outputs.image_tag }}
               fullnameOverride:${{steps.release-name.outputs.result}}
               image.pullPolicy:"Always"
-              ingress.enabled: ${{env.ENABLE_INGRESS}}   
+              ingress.enabled:${{env.ENABLE_INGRESS}}   
       
       # Deploy app to AKS - do not use azure/k8s-deploy since it pollutes K8s resources
       # with annotations that cannot be turned off 
       - name: Deploy to AKS
         run: | 
+              # remove any s
+              kubectl delete -f ${{ steps.bake_helm.outputs.manifestsBundle }} --namespace ${{env.CLUSTER_NAMESPACE}} --ignore-not-found=true  --insecure-skip-tls-verify --wait=true  
               kubectl apply -f ${{ steps.bake_helm.outputs.manifestsBundle }} --insecure-skip-tls-verify --namespace ${{env.CLUSTER_NAMESPACE}}
 
               # optionally to make sure that deployment created pod via replicaset and pods are running can wait for it 
-              # kubectl wait pods -n ${{env.CLUSTER_NAMESPACE}} -l "app.kubernetes.io/instance=${{steps.release-name.outputs.result}}" --for condition=Ready --timeout=90s
+              kubectl wait pods -n ${{env.CLUSTER_NAMESPACE}} -l "app.kubernetes.io/instance=${{steps.release-name.outputs.result}}" --for condition=Ready --timeout=90s
         shell: pwsh 
 
 
