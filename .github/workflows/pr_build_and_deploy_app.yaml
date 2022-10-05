@@ -1,6 +1,6 @@
 # Description
 ##############
-# Buid and deploy WebAPI as single pod service to AKS
+# Buid and deploy simple web api service as single pod service to AKS
 # Triggerred automatically by pull request that targets main bra
 ##############
 # input parameters
@@ -10,24 +10,25 @@
 #    ACR_USERNAME - azure cotainer registry username
 #    ACR_PASSWORD - azure container registry password
 #    
-#    AZURE_CREDENTIALS - azure credentials in format ""
 #    CLUSTER_NAME  - name of AKS cluster
-#    RESOURCE_GROUP - azure resource groups 
+#    RESOURCE_GROUP - azure resource groups where AKS cluster deployed 
 
-name: Build & Deploy Web Api
+name: Build & Deploy Web Api to AKS
 on: 
  pull_request:
    branches:
-    - main  # branch that pr targets 
+    - main  # branch that PR targets 
    paths:
    # restrict changes to only specific path to avoid deploying any other service
     - 'src/Services/Services.BackendApi/**' 
 
 env:
+  # docker image name for service - by default matches the service name
   DOCKER_IMAGE_NAME: backendapi
-  CLUSTER_NAMESPACE: b2kapp # K8s namespace to be used in deployment
+  # Target K8s namespace to deploy service into
+  CLUSTER_NAMESPACE: b2kapp 
+  # K8s service name that is required in B2K annotations to route traffic from
   SERVICE_NAME: backendapi
-  ACR_URL: xtestacr113.azurecr.io
   # wherer or not deploy Ingress for the service. 
   # If service should be tested with direct HTTP call the Ingress should be deployed
   # if service should be tested in conjunction with other ones 
@@ -65,6 +66,7 @@ jobs:
         # login to Azure with in advance created creds
         # see how to create app, service principal and assign service principal on azure subscription with Contributor role
         # https://learn.microsoft.com/en-us/azure/developer/github/connect-from-azure?tabs=azure-cli%2Cwindows#create-an-azure-active-directory-application-and-service-principal
+        # https://learn.microsoft.com/en-us/azure/active-directory/develop/workload-identity-federation-create-trust?pivots=identity-wif-apps-methods-azp#configure-a-federated-identity-credential-on-an-app
       - name: Azure Login 
         uses: azure/login@v1
         with:
@@ -90,7 +92,7 @@ jobs:
       - name: Authenticate in  Azure container registry        
         uses: azure/docker-login@v1
         with:
-          login-server: ${{ env.ACR_URL }}
+          login-server: ${{ secrets.ACR_URL }}
           username: ${{ secrets.ACR_USERNAME }}
           password: ${{ secrets.ACR_PASSWORD }}
       - name: Build docker image
@@ -123,7 +125,7 @@ jobs:
 
         shell: pwsh
 
-      - name: Create rlease name
+      - name: Create release name
         id: release-name
         run: |
               <#
@@ -164,8 +166,8 @@ jobs:
         shell: pwsh 
 
 
-        # annotate pods deployed in "Deploy to AKS" 
-        # with the Bridge to Kubernetes  
+        # annotate pods with the Bridge to Kubernetes annotations 
+        # to re-route traffic  
       - name: Add routing labels
         run: |
               <#
