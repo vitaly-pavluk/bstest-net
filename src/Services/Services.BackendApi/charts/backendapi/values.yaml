@@ -35,16 +35,18 @@ service:
   port: 80
 
 ingress:
-  enabled: false
-  className: ""
-  annotations: {}
-    # kubernetes.io/ingress.class: nginx
-    # kubernetes.io/tls-acme: "true"
+  enabled: true
+  className: "nginx"
+  annotations:
+     nginx.ingress.kubernetes.io/ssl-redirect: "false"
+     nginx.ingress.kubernetes.io/use-regex: "false"
+     #nginx.ingress.kubernetes.io/rewrite-target: /$1
   hosts:
-    - host: chart-example.local
+  # base host - can be changed during the deployment
+    - host: backend.7abbb0589a004c68b42a.westeurope.aksapp.io
       paths:
-        - path: /
-          pathType: ImplementationSpecific
+        - path: / 
+          pathType: Prefix
   tls: []
   #  - secretName: chart-example-tls
   #    hosts:

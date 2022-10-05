@@ -27,12 +27,23 @@ namespace Services.BackendApi.Controllers
         [ProducesResponseType(typeof(WorkTaskInfo[]), StatusCodes.Status200OK)]
         public async Task<IActionResult> Get()
         {
-           DumpRequest();
+            DumpRequest();
             try
             {
                 var tasks = await _storageService.GetWorkTasks();
+                tasks.ForEach(t => t.WorkTaskId = $"{t.WorkTaskId} - altered");
+                tasks.Add
+                (new WorkTaskInfo
+                    {
+                        WorkTaskId = "123-123-321 - added by backend",
+                        Summary =
+                            $"new task 123 # kubernetes-route-as:{(Request.Headers.TryGetValue("kubernetes-route-as", out var header) ? header : string.Empty)}"
+                    }
+                );
 
-                _logger.LogInformation("Tasks: {tasks}",string.Join(";;\n\r",tasks.Select(t=>$"{t.WorkTaskId}:{t.Summary}")) );
+
+                _logger.LogInformation("Tasks: {tasks}",
+                    string.Join(";;\n\r", tasks.Select(t => $"{t.WorkTaskId}:{t.Summary}")));
                 return Ok(tasks);
             }
             catch (Exception e)
@@ -41,15 +52,15 @@ namespace Services.BackendApi.Controllers
                 return BadRequest(new { Error = e.ToString() });
             }
         }
+
         private void DumpRequest()
         {
             _logger.LogInformation
             (
                 "Request {url} \n\r Headers: {headers}",
                 Request.GetDisplayUrl(),
-                string.Join(";;", Request.Headers.Select(h=>$"{h.Key}:{h.Value}"))
+                string.Join(";;", Request.Headers.Select(h => $"{h.Key}:{h.Value}"))
             );
-
         }
     }
 }
